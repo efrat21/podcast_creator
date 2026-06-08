@@ -1,0 +1,12 @@
+# Requirements for knigovishte-podcast
+# Install with: pip install -r requirements.txt
+# 
+# Locked to exact versions for reproducibility (frozen 2026-04-18)
+# stdlib modules (urllib, html.parser, re, argparse, dataclasses, pathlib, os) are excluded
+
+Flask==3.1.2
+google-cloud-texttospeech==2.36.0
+imageio-ffmpeg==0.6.0
+requests==2.33.1
+python-dotenv==1.2.2
+pyttsx3==2.99
