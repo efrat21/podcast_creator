@@ -1,3 +1,19 @@
+"""knigovishte_podcast.services.rss
+
+Builds a local RSS feed from generated audio artifacts and provides a
+simple HTTP server for LAN delivery to podcast clients (e.g., Podcast Addict).
+
+Usage:
+- CLI: `python main.py local-rss-delivery` (rebuilds data\rss\podcast.xml and optionally serves it)
+- Programmatic: instantiate LocalRSSService(ProjectPaths(...)) and call
+  `rebuild_feed(public_base_url)` and/or `create_server(host=..., port=...)`.
+
+Notes:
+- The service prefers .mp3 when multiple formats for the same episode exist.
+- Set PODCAST_BASE_URL in .env to control published feed URL when serving on a LAN.
+- LocalRSSRequestHandler tolerates client disconnects to avoid noisy exceptions
+  when mobile clients cancel downloads.
+"""
 from __future__ import annotations
 
 import errno
@@ -69,6 +85,9 @@ def _is_client_disconnect_error(error: OSError) -> bool:
     )
 
 
+# Request handler that tolerates premature client disconnects (mobile apps
+# often cancel downloads). The copyfile override swallows expected connection
+# errors to avoid noisy tracebacks while keeping the server running.
 class LocalRSSRequestHandler(SimpleHTTPRequestHandler):
     def copyfile(self, source, outputfile) -> None:  # type: ignore[override]
         try:
@@ -81,6 +100,17 @@ class LocalRSSRequestHandler(SimpleHTTPRequestHandler):
 
 
 class LocalRSSService:
+    """Service that builds an RSS feed XML from existing audio files and
+    stages them for HTTP delivery.
+
+    Primary methods:
+    - rebuild_feed(public_base_url) -> FeedBuildResult: copies audio into the
+      rss/episodes staging dir and writes rss/podcast.xml with enclosure URLs.
+    - create_server(host, port) -> ThreadingHTTPServer: returns a server that
+      serves the rss directory; call .serve_forever() to run it.
+
+    See module docstring for usage notes and environment variables.
+    """
     def __init__(self, paths: ProjectPaths) -> None:
         self.paths = paths
 
