@@ -195,8 +195,11 @@ class DailyEpisodeScheduler:
                     result = self.check_and_generate()
                     self._print_result(result)
                     print()
-
-                time.sleep(check_interval_seconds)
+                    if "Pipeline error" in result.skip_reason:
+                        print("Encountered pipeline error, will retry in 5 minutes.")
+                        time.sleep(300)  # Wait 5 minutes before next check on error
+                    else:
+                        time.sleep(check_interval_seconds)
 
         except KeyboardInterrupt:
             print("\nScheduler stopped by user.")
