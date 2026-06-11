@@ -94,7 +94,7 @@ class DailyEpisodeScheduler:
             )
 
         # Check if this is the same article we processed before
-        if state and state.last_article_url == latest_article.source_url:
+        if state and state.last_article_url == latest_article.source_url and state.last_episode_path:
             return DailyCheckResult(
                 checked_at=check_time,
                 new_episode_created=False,
