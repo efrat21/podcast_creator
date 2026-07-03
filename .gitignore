@@ -18,3 +18,6 @@ data/audio/*
 !data/audio/.gitkeep
 data/rss/*
 !data/rss/pic.png
+!data/rss/podcast.xml
+!data/rss/episodes/
+
