@@ -18,6 +18,9 @@ from knigovishte_podcast.web import UNEXPECTED_ERROR_MESSAGE, create_app
 
 class WebUiTests(unittest.TestCase):
     def setUp(self) -> None:
+        self.rebuild_patcher = patch("knigovishte_podcast.services.rss.LocalRSSService")
+        self.mock_rss_service = self.rebuild_patcher.start()
+
         self.workdir = Path(__file__).resolve().parent / "_artifacts" / self._testMethodName
         if self.workdir.exists():
             shutil.rmtree(self.workdir)
@@ -43,6 +46,7 @@ class WebUiTests(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
+        self.rebuild_patcher.stop()
         if self.workdir.exists():
             shutil.rmtree(self.workdir)
 

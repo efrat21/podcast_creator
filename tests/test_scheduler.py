@@ -39,7 +39,7 @@ class TestSchedulerState(unittest.TestCase):
 
 class TestDailyEpisodeScheduler(unittest.TestCase):
     def setUp(self) -> None:
-        self.test_dir = Path("tests/_artifacts/scheduler_test")
+        self.test_dir = Path(__file__).resolve().parent / "_artifacts" / "scheduler_test"
         self.test_dir.mkdir(parents=True, exist_ok=True)
 
         self.paths = ProjectPaths(

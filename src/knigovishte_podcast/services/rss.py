@@ -170,7 +170,7 @@ class LocalRSSService:
     def _load_project_env(self) -> None:
         env_file = self.paths.root / ".env"
         if env_file.is_file():
-            load_dotenv(env_file, override=False)
+            load_dotenv(env_file, override=True)
 
     def _default_public_host(self, bind_host: str) -> str:
         if bind_host in {"0.0.0.0", "::", ""}:

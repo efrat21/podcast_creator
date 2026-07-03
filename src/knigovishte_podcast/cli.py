@@ -87,8 +87,8 @@ def build_parser() -> argparse.ArgumentParser:
     web_parser.add_argument(
         "--port",
         type=int,
-        default=5000,
-        help="Port for the local web server. Defaults to 5000.",
+        default=8085,
+        help="Port for the local web server. Defaults to 8085.",
     )
 
     daily_check_parser = subparsers.add_parser(
@@ -440,8 +440,8 @@ def _run_daily_daemon(args: argparse.Namespace) -> int:
     )
     selector = ArticleSelector()
     scheduler = DailyEpisodeScheduler(pipeline, selector, paths)
-
-    scheduler.run_daemon(check_interval_seconds=args.interval)
+    check_interval_seconds = args.interval if args.interval else 86400
+    scheduler.run_daemon(check_interval_seconds=check_interval_seconds)
     return 0
 
 

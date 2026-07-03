@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import os
+from functools import wraps
+from dotenv import load_dotenv
 from flask import Flask, Response, render_template_string, request
 from flask.typing import ResponseReturnValue
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -27,8 +30,9 @@ SECURITY_HEADERS = {
     "Cache-Control": "no-store",
     "Content-Security-Policy": (
         "default-src 'self'; "
+        "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data:; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "script-src 'self' 'unsafe-inline'; "
         "base-uri 'none'; "
         "form-action 'self'"
@@ -48,68 +52,323 @@ PAGE_TEMPLATE = """
   <head>
     <meta charset="utf-8">
     <meta name="robots" content="noindex, nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Knigovishte Podcast Builder</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-      body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 52rem; line-height: 1.5; }
-      form { display: grid; gap: 0.75rem; padding: 1rem; border: 1px solid #d0d7de; border-radius: 0.5rem; background: #f6f8fa; }
-      label { font-weight: 600; }
-      input[type="text"], input[type="number"], select { width: 100%; padding: 0.6rem; }
-      button { width: fit-content; padding: 0.65rem 1rem; }
-      .panel { margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; }
-      .success { background: #e6ffed; border: 1px solid #b7ebc6; }
-      .error { background: #ffebe9; border: 1px solid #ffb3ad; }
-      .filters { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
-      .status { margin-top: 1rem; font-weight: 600; }
+      :root {
+        --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+        --card-bg: rgba(30, 41, 59, 0.7);
+        --card-border: rgba(255, 255, 255, 0.08);
+        --text-primary: #f3f4f6;
+        --text-secondary: #9ca3af;
+        --accent-primary: #3b82f6;
+        --accent-secondary: #8b5cf6;
+        --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        --input-bg: rgba(17, 24, 39, 0.6);
+        --input-border: rgba(255, 255, 255, 0.1);
+        --input-focus-border: #3b82f6;
+        --success-bg: rgba(16, 185, 129, 0.15);
+        --success-border: rgba(16, 185, 129, 0.3);
+        --success-text: #34d399;
+        --error-bg: rgba(239, 68, 68, 0.15);
+        --error-border: rgba(239, 68, 68, 0.3);
+        --error-text: #f87171;
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        font-family: 'Inter', -apple-system, sans-serif;
+        background: var(--bg-gradient);
+        color: var(--text-primary);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem 1rem;
+        line-height: 1.6;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 32rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+      }
+
+      header {
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        margin-bottom: 0.5rem;
+        background: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .subtitle {
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        padding: 2rem;
+        border: 1px solid var(--card-border);
+        border-radius: 1rem;
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      label {
+        font-weight: 500;
+        font-size: 0.875rem;
+        color: var(--text-primary);
+      }
+
+      input[type="text"], input[type="number"], select {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background: var(--input-bg);
+        border: 1px solid var(--input-border);
+        border-radius: 0.5rem;
+        color: var(--text-primary);
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      input[type="text"]::placeholder, input[type="number"]::placeholder {
+        color: rgba(156, 163, 175, 0.5);
+      }
+
+      input[type="text"]:focus, input[type="number"]:focus, select:focus {
+        outline: none;
+        border-color: var(--input-focus-border);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+      }
+
+      select {
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.25rem;
+        padding-right: 2.5rem;
+      }
+
+      .filters {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .checkbox-group {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        padding: 0.25rem 0;
+      }
+
+      .checkbox-group input {
+        width: 1.15rem;
+        height: 1.15rem;
+        accent-color: var(--accent-primary);
+        cursor: pointer;
+      }
+
+      .checkbox-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        user-select: none;
+        cursor: pointer;
+      }
+
+      button {
+        width: 100%;
+        padding: 0.85rem;
+        background: var(--accent-gradient);
+        border: none;
+        border-radius: 0.5rem;
+        color: #ffffff;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.4);
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5);
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .panel {
+        padding: 1.25rem;
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      .success {
+        background: var(--success-bg);
+        border: 1px solid var(--success-border);
+        color: var(--success-text);
+      }
+
+      .error {
+        background: var(--error-bg);
+        border: 1px solid var(--error-border);
+        color: var(--error-text);
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .error h2 {
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+
+      .error p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        margin-top: 0.5rem;
+        color: var(--accent-primary);
+        font-weight: 500;
+        font-size: 0.95rem;
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+
       .status[hidden] { display: none; }
+
+      .spinner {
+        width: 1.25rem;
+        height: 1.25rem;
+        border: 2px solid rgba(59, 130, 246, 0.2);
+        border-top-color: var(--accent-primary);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
     </style>
   </head>
   <body>
-    <h1>Knigovishte Podcast Builder</h1>
-    <p>Run the existing article → translation → script → audio pipeline locally from your browser.</p>
-    <form id="podcast-form" method="post">
-      <div>
-        <label for="url">Article URL (optional)</label>
-        <input id="url" name="url" type="text" value="{{ form.url }}" maxlength="2048" placeholder="Leave blank to use the latest Knigovishte article">
-      </div>
-      <div class="filters">
-        <div>
-          <label for="min_length">Minimum length (sentences)</label>
-          <input id="min_length" name="min_length" type="number" min="1" value="{{ form.min_length }}" placeholder="Any length">
-        </div>
-        <div>
-          <label for="max_length">Maximum length (sentences)</label>
-          <input id="max_length" name="max_length" type="number" min="1" value="{{ form.max_length }}" placeholder="Any length">
-        </div>
-      </div>
-      <div>
-        <label for="category">Category</label>
-        <select id="category" name="category">
-          <option value="">Any category</option>
-          {% for slug, label in categories %}
-            <option value="{{ slug }}" {% if form.category == slug %}selected{% endif %}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <label>
-        <input name="refresh" type="checkbox" {% if form.refresh %}checked{% endif %}>
-        Ignore cached HTML and fetch the article again
-      </label>
-      <button id="submit-button" type="submit">Generate podcast artifacts</button>
-    </form>
-    <p id="working-message" class="status" hidden>Working...</p>
+    <div class="container">
+      <header>
+        <h1>Podcast Builder</h1>
+        <p class="subtitle">Convert Bulgarian articles to bilingual audio feed episodes</p>
+      </header>
 
-    {% if result %}
-      <section class="panel success">
-        <p><strong>Your episode is ready.</strong></p>
-      </section>
-    {% endif %}
+      <form id="podcast-form" method="post">
+        <div class="form-group">
+          <label for="url">Article URL (optional)</label>
+          <input id="url" name="url" type="text" value="{{ form.url }}" maxlength="2048" placeholder="Latest Knigovishte article">
+        </div>
+        
+        <div class="filters">
+          <div class="form-group">
+            <label for="min_length">Minimum length (sentences)</label>
+            <input id="min_length" name="min_length" type="number" min="1" value="{{ form.min_length }}" placeholder="Any">
+          </div>
+          <div class="form-group">
+            <label for="max_length">Maximum length (sentences)</label>
+            <input id="max_length" name="max_length" type="number" min="1" value="{{ form.max_length }}" placeholder="Any">
+          </div>
+        </div>
 
-    {% if error %}
-      <section class="panel error">
-        <h2>Pipeline failed</h2>
-        <p>{{ error }}</p>
-      </section>
-    {% endif %}
+        <div class="form-group">
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option value="">Any category</option>
+            {% for slug, label in categories %}
+              <option value="{{ slug }}" {% if form.category == slug %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <input id="refresh" name="refresh" type="checkbox" {% if form.refresh %}checked{% endif %}>
+          <label for="refresh" class="checkbox-label">Ignore cached HTML and fetch the article again</label>
+        </div>
+
+        <button id="submit-button" type="submit">Generate Podcast Episode</button>
+      </form>
+
+      <div id="working-message" class="status" hidden>
+        <div class="spinner"></div>
+        <span>Working...</span>
+      </div>
+
+      {% if result %}
+        <section class="panel success">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
+          </svg>
+          <p><strong>Your episode is ready.</strong> The podcast RSS feed was updated and pushed successfully.</p>
+        </section>
+      {% endif %}
+
+      {% if error %}
+        <section class="panel error">
+          <h2>Pipeline failed</h2>
+          <p>{{ error }}</p>
+        </section>
+      {% endif %}
+    </div>
+
     <script>
       const form = document.getElementById("podcast-form");
       const workingMessage = document.getElementById("working-message");
@@ -135,6 +394,55 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
     app.config["PROJECT_PATHS"] = project_paths
     app.config["MAX_CONTENT_LENGTH"] = MAX_FORM_BODY_BYTES
 
+    # Load env file to ensure WEB_USERNAME and WEB_PASSWORD are loaded
+    env_file = project_paths.root / ".env"
+    if env_file.is_file():
+        load_dotenv(env_file, override=True)
+
+    def check_auth(username, password):
+        expected_username = os.environ.get("WEB_USERNAME")
+        expected_password = os.environ.get("WEB_PASSWORD")
+        return username == expected_username and password == expected_password
+
+    def authenticate():
+        return Response(
+            "Could not verify your access level for this URL.\n"
+            "You have to login with proper credentials", 401,
+            {"WWW-Authenticate": 'Basic realm="Login Required"'}
+        )
+
+    def requires_auth(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            auth = request.authorization
+            expected_username = os.environ.get("WEB_USERNAME")
+            expected_password = os.environ.get("WEB_PASSWORD")
+            if expected_username and expected_password:
+                if not auth or not check_auth(auth.username, auth.password):
+                    return authenticate()
+            return f(*args, **kwargs)
+        return decorated
+
+    def _rebuild_rss_and_push(project_paths: ProjectPaths) -> None:
+        import subprocess
+        from .services.rss import LocalRSSService
+        # 1. Rebuild RSS feed
+        rss_service = LocalRSSService(project_paths)
+        public_base_url = rss_service.build_public_base_url(
+            bind_host="0.0.0.0",
+            port=8000,
+        )
+        rss_service.rebuild_feed(public_base_url)
+
+        # 2. Git add, commit, and push
+        root_str = str(project_paths.root)
+        try:
+            subprocess.run(["git", "add", "data/rss/"], check=True, cwd=root_str)
+            subprocess.run(["git", "commit", "-m", "Add new podcast episode"], check=False, cwd=root_str)
+            subprocess.run(["git", "push"], check=True, cwd=root_str)
+        except Exception as git_exc:
+            app.logger.warning(f"Git operations failed: {git_exc}")
+
     @app.after_request
     def add_security_headers(response: Response) -> Response:
         for header_name, header_value in SECURITY_HEADERS.items():
@@ -157,6 +465,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
         )
 
     @app.route("/", methods=["GET", "POST"])
+    @requires_auth
     def index() -> ResponseReturnValue:
         url_value = request.form.get("url", "")
         min_length_value = request.form.get("min_length", "")
@@ -198,8 +507,10 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                     paths=project_paths,
                     use_cached_html=not refresh_requested,
                 ).run(article_url)
+                _rebuild_rss_and_push(project_paths)
                 result = {"ready": True}
             except DuplicateArticleError:
+                _rebuild_rss_and_push(project_paths)
                 result = {"ready": True}
             except Exception as exc:
                 if not isinstance(exc, (LangblyTimeoutError, ValueError)):
