@@ -1,11 +1,15 @@
 # Knigovishte Podcast Builder
 
 ## 1. Introduction
-The **Knigovishte Podcast Builder** is a tool that automatically converts Bulgarian articles from [Knigovishte](https://www.knigovishte.bg/vijte) into bilingual (Bulgarian/English) audio podcast episodes delivered straight to your phone.
+
+**Knigovishte Podcast Builder** helps people improve their **Bulgarian listening comprehension** in a fun and engaging way. It automatically turns articles from [Knigovishte kids news](https://www.knigovishte.bg/vijte) into bilingual (Bulgarian/English) podcast episodes by using **AI to translate the text and generate natural-sounding speech**. The finished episodes can be listened to in any podcast app, making it easy to practice Bulgarian while enjoying interesting stories and articles.
+
+This project was created using **agents vibe coding**, with AI-assisted development powered by **GitHub Copilot** and **Bradygaster/Squad**. It demonstrates how modern AI development tools can be used to quickly build a practical application that solves a real language-learning problem.
 
 > [!NOTE]
-> * **If you only want to listen to existing episodes:** You do not need to install or configure anything. Just copy the RSS feed URL in **[Section 2](#2-listening-to-existing-episodes)** and add it to your favorite podcast application.
-> * **If you want to create new episodes or change the app:** Follow the **[Quick Setup](#quick-setup)** below to clone, install, and configure the project.
+>
+> * **If you only want to listen to existing episodes:** You do not need to install or configure anything. Simply copy the RSS feed URL **https://efrat21.github.io/podcast_creator/data/rss/podcast.xml** and add it to your favorite podcast app. see **[Listening to Episodes](#2-listening-to-episodes)** section for detailed explanations.
+> * **If you want to create new episodes or modify the application:** Follow the **[Quick Setup](#quick-setup)** below to clone, install, and configure the project.
 
 ### Quick Setup
 1. **Install dependencies:**
@@ -17,23 +21,15 @@ The **Knigovishte Podcast Builder** is a tool that automatically converts Bulgar
    Create a `.env` file in the project folder:
    ```dotenv
    LANGBLY_API_KEY=your_key_here
+   GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\your-key.json"
    PODCAST_BASE_URL=https://<your-github-username>.github.io/<your-repository-name>/data/rss
-
-   # Optional: Secure Web UI credentials
-   WEB_USERNAME=admin
-   WEB_PASSWORD=your_secure_password
    ```
-3. **Google Voices Setup:**
-   Ensure Google Cloud TTS credentials are set in your environment:
-   ```powershell
-   $env:GOOGLE_APPLICATION_CREDENTIALS="C:\path\to\your-key.json"
-   ```
-4. **Enable GitHub Pages:**
+3. **Enable GitHub Pages:**
    In your GitHub repository settings, go to **Pages**, set the build source branch to `main` (or your active branch) and directory `/ (root)`, then click **Save**.
 
 ---
 
-## 2. Listening to Existing Episodes
+## 2. Listening to Episodes
 You can subscribe to and listen to all generated episodes on any RSS-friendly podcast player (such as **Podcast Addict** on Android or **Apple Podcasts**):
 
 1. Copy your public feed URL:
@@ -74,5 +70,11 @@ You can generate new episodes and update the podcast feed using any of the follo
    git push
    ```
 
-### Method C: Automated Daily Check
-The system runs a daily scheduled task (`KnigovishtePodcastDaily`) at **14:00** (2:00 PM) to check for new articles, generate the episode, rebuild the RSS feed, and publish it to GitHub completely automatically.
+### Method C: Automated Daily Daemon
+You can run a continuous background daemon that automatically checks for new articles once a day:
+1. Run the background daemon:
+   ```powershell
+   python main.py daily-daemon
+   ```
+   *(This starts a background loop that wakes up once every 24 hours to check for new articles, translate them, generate audio, rebuild the RSS feed, and push everything to GitHub. You can customize the check interval using the `--interval` flag in seconds, e.g., `--interval 3600` to check every hour).*
+2. **Note:** There is also a scheduled daily task (`KnigovishtePodcastDaily`) registered on your system to run the daily check automatically every day at **14:00** (2:00 PM).
