@@ -72,9 +72,8 @@ You can generate new episodes and update the podcast feed using any of the follo
 
 ### Method C: Automated Daily Daemon
 You can run a continuous background daemon that automatically checks for new articles once a day:
-1. Run the background daemon:
+Run the background daemon:
    ```powershell
    python main.py daily-daemon
    ```
    *(This starts a background loop that wakes up once every 24 hours to check for new articles, translate them, generate audio, rebuild the RSS feed, and push everything to GitHub. You can customize the check interval using the `--interval` flag in seconds, e.g., `--interval 3600` to check every hour).*
-2. **Note:** There is also a scheduled daily task (`KnigovishtePodcastDaily`) registered on your system to run the daily check automatically every day at **14:00** (2:00 PM).
