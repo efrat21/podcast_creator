@@ -3,6 +3,10 @@
 ## 1. Introduction
 The **Knigovishte Podcast Builder** is a tool that automatically converts Bulgarian articles from [Knigovishte](https://www.knigovishte.bg/vijte) into bilingual (Bulgarian/English) audio podcast episodes delivered straight to your phone.
 
+> [!NOTE]
+> * **If you only want to listen to existing episodes:** You do not need to install or configure anything. Just copy the RSS feed URL in **[Section 2](#2-listening-to-existing-episodes)** and add it to your favorite podcast application.
+> * **If you want to create new episodes or change the app:** Follow the **[Quick Setup](#quick-setup)** below to clone, install, and configure the project.
+
 ### Quick Setup
 1. **Install dependencies:**
    ```powershell
