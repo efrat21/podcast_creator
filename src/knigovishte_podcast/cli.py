@@ -405,6 +405,16 @@ def _run_web(args: argparse.Namespace) -> int:
     return 0
 
 
+def _notify_failure(message: str) -> None:
+    """Show a Windows GUI message box if running on Windows and interactive."""
+    try:
+        import ctypes
+        # MB_OK = 0x00000000, MB_ICONERROR = 0x00000010, MB_SYSTEMMODAL = 0x00001000
+        ctypes.windll.user32.MessageBoxW(0, message, "Podcast Creator Alert", 0x10 | 0x1000)
+    except Exception:
+        pass
+
+
 def _run_daily_check(args: argparse.Namespace) -> int:
     """Run a single daily check for new articles."""
     paths = ProjectPaths.from_root()
@@ -423,7 +433,12 @@ def _run_daily_check(args: argparse.Namespace) -> int:
     print("Running daily episode check...")
     result = scheduler.check_and_generate()
     scheduler._print_result(result)
+    
+    if result.skip_reason and ("Failed to fetch" in result.skip_reason or "Pipeline error" in result.skip_reason):
+        _notify_failure(f"Daily check failed: {result.skip_reason}")
+        return 1
     return 0
+
 
 
 def _run_daily_daemon(args: argparse.Namespace) -> int:
@@ -558,7 +573,11 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Web failed: {exc}")
         else:
             print(f"{args.command.replace('-', ' ').title()} failed: {exc}")
+        
+        if args.command in ("daily-check", "daily-daemon"):
+            _notify_failure(f"The Podcast Creator {args.command} failed with error:\n\n{exc}")
         return 1
+
 
     parser.error(f"Unsupported command: {args.command}")
     return 2

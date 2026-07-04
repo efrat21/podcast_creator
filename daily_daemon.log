@@ -1,0 +1,23 @@
+﻿[2026-07-04 13:17:01] Starting daily-daemon wrapper...
+Daily episode scheduler started.
+Will check once per day for new articles. Press Ctrl+C to stop.
+
+Checking for new article at 2026-07-04T13:17:02.394439
+last_article_url: https://www.knigovishte.bg/vijte/7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta%E2%80%9C
+last_episode_path: data\audio\vijte-7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta-e2-80-9c.mp3
+Γùï No new episode
+  Reason: Latest article already processed
+  Article checked: https://www.knigovishte.bg/vijte/7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta%E2%80%9C
+
+test
+[2026-07-04 13:17:42] Starting daily-daemon wrapper...
+Daily episode scheduler started.
+Will check once per day for new articles. Press Ctrl+C to stop.
+
+Checking for new article at 2026-07-04T13:17:42.710993
+last_article_url: https://www.knigovishte.bg/vijte/7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta%E2%80%9C
+last_episode_path: data\audio\vijte-7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta-e2-80-9c.mp3
+Γùï No new episode
+  Reason: Latest article already processed
+  Article checked: https://www.knigovishte.bg/vijte/7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta%E2%80%9C
+

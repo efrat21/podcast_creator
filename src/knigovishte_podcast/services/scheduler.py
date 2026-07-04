@@ -197,6 +197,10 @@ class DailyEpisodeScheduler:
                     result = self.check_and_generate()
                     self._print_result(result)
                     print()
+                    
+                    if result.skip_reason and ("Failed to fetch" in result.skip_reason or "Pipeline error" in result.skip_reason):
+                        self._notify_failure(f"Daily check failed: {result.skip_reason}")
+
                     if "Pipeline error" in result.skip_reason:
                         print("Encountered pipeline error, will retry in 5 minutes.")
                         time.sleep(300)  # Wait 5 minutes before next check on error
@@ -206,7 +210,18 @@ class DailyEpisodeScheduler:
         except KeyboardInterrupt:
             print("\nScheduler stopped by user.")
 
+    @staticmethod
+    def _notify_failure(message: str) -> None:
+        """Show a Windows GUI message box if running on Windows and interactive."""
+        try:
+            import ctypes
+            # MB_OK = 0x00000000, MB_ICONERROR = 0x00000010, MB_SYSTEMMODAL = 0x00001000
+            ctypes.windll.user32.MessageBoxW(0, message, "Podcast Creator Alert", 0x10 | 0x1000)
+        except Exception:
+            pass
+
     def _load_state(self) -> SchedulerState | None:
+
         """Load scheduler state from disk."""
         if not self.state_path.exists():
             return None
