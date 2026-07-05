@@ -182,7 +182,7 @@ class CliCommandTests(unittest.TestCase):
                                 exit_code = main(["generate-audio", "--url", self.article.source_url, "--refresh"])
 
         self.assertEqual(exit_code, 0)
-        audio_factory.assert_called_once_with(voice_name=None, bg_voice_name=None, bg_speaking_rate=1.0)
+        audio_factory.assert_called_once_with(voice_name=None, bg_voice_name=None, bg_speaking_rate=0.8)
         self.assertEqual(fetcher.fetch_html_calls, 1)
         self.assertTrue(expected_script_path.exists())
         self.assertTrue(expected_audio_path.exists())
@@ -224,7 +224,7 @@ class CliCommandTests(unittest.TestCase):
         audio_factory.assert_called_once_with(
             voice_name="en-US-Standard-C",
             bg_voice_name="bg-BG-Standard-B",
-            bg_speaking_rate=1.0,
+            bg_speaking_rate=0.8,
         )
 
     def test_generate_audio_command_skips_duplicate_article(self) -> None:
@@ -349,7 +349,7 @@ class CliCommandTests(unittest.TestCase):
         audio_mock.assert_called_once_with(
             voice_name="en-GB-Standard-A",
             bg_voice_name="bg-BG-Standard-B",
-            bg_speaking_rate=1.0,
+            bg_speaking_rate=0.8,
         )
 
     def test_daily_check_command_passes_bg_speed_override(self) -> None:

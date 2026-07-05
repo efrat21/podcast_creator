@@ -51,14 +51,14 @@ You can generate new episodes and update the podcast feed using any of the follo
    python main.py web
    ```
 2. Open `http://127.0.0.1:8085` in your browser.
-3. Paste an article URL (or leave blank to process the latest one) and click **Generate Podcast Episode**. The system will automatically build the audio, update the RSS feed, and push it to GitHub.
+3. Paste an article URL (or leave blank to process the latest one), choose the **Bulgarian Voice Speed** (defaults to `0.8x` for easier comprehension, with options from `0.5x` to `1.2x`), and click **Generate Podcast Episode**. The system will automatically build the audio, update the RSS feed, and push it to GitHub.
 
 ### Method B: Command Line
 1. Run the generator pipeline:
    ```powershell
    python main.py run --url "https://www.knigovishte.bg/vijte/..."
    ```
-   *(Or leave out `--url` to select the latest article automatically).*
+   *(Or leave out `--url` to select the latest article automatically. You can configure the Bulgarian voice speed multiplier using the `--bg-speed` flag, e.g., `--bg-speed 0.8` or `--bg-speed 0.5`. It defaults to `0.8`).*
 2. Rebuild the local feed:
    ```powershell
    python main.py local-rss-delivery --no-serve

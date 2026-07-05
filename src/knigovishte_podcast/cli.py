@@ -176,9 +176,9 @@ def _add_voice_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--bg-speed",
         type=float,
-        default=1.0,
+        default=0.8,
         help="Speaking speed multiplier for the Bulgarian voice (e.g. 0.8 for slower). "
-        "Defaults to 1.0. Valid range: 0.25 to 4.0.",
+        "Defaults to 0.8. Valid range: 0.25 to 4.0.",
     )
 
 

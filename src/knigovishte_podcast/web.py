@@ -343,9 +343,12 @@ PAGE_TEMPLATE = """
         <div class="form-group">
           <label for="bg_speed">Bulgarian Voice Speed</label>
           <select id="bg_speed" name="bg_speed">
-            <option value="0.8" {% if form.bg_speed == "0.8" %}selected{% endif %}>0.8x (Slower, recommended for learning)</option>
+            <option value="0.5" {% if form.bg_speed == "0.5" %}selected{% endif %}>0.5x (Slowest)</option>
+            <option value="0.6" {% if form.bg_speed == "0.6" %}selected{% endif %}>0.6x</option>
+            <option value="0.7" {% if form.bg_speed == "0.7" %}selected{% endif %}>0.7x</option>
+            <option value="0.8" {% if not form.bg_speed or form.bg_speed == "0.8" %}selected{% endif %}>0.8x (Slower, recommended for learning)</option>
             <option value="0.9" {% if form.bg_speed == "0.9" %}selected{% endif %}>0.9x</option>
-            <option value="1.0" {% if not form.bg_speed or form.bg_speed == "1.0" %}selected{% endif %}>1.0x (Normal)</option>
+            <option value="1.0" {% if form.bg_speed == "1.0" %}selected{% endif %}>1.0x (Normal)</option>
             <option value="1.1" {% if form.bg_speed == "1.1" %}selected{% endif %}>1.1x</option>
             <option value="1.2" {% if form.bg_speed == "1.2" %}selected{% endif %}>1.2x</option>
           </select>
@@ -471,7 +474,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                 "max_length": "",
                 "category": "",
                 "refresh": False,
-                "bg_speed": "1.0",
+                "bg_speed": "0.8",
             },
             error="Request body is too large for this recruiter-facing showcase page.",
             status_code=413,
@@ -485,7 +488,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
         max_length_value = request.form.get("max_length", "")
         category_value = request.form.get("category", "")
         refresh_requested = request.form.get("refresh") == "on"
-        bg_speed_value = request.form.get("bg_speed", "1.0")
+        bg_speed_value = request.form.get("bg_speed", "0.8")
         result: dict[str, object] | None = None
         error: str | None = None
 
@@ -525,7 +528,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                 try:
                     bg_speed_float = float(bg_speed_value)
                 except ValueError:
-                    bg_speed_float = 1.0
+                    bg_speed_float = 0.8
 
                 pipeline(
                     paths=project_paths,
