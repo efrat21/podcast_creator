@@ -4,7 +4,7 @@ import shutil
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, ANY
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -81,7 +81,7 @@ class WebUiTests(unittest.TestCase):
             response = client.post("/", data={"url": self.article.source_url, "refresh": "on"})
 
         self.assertEqual(response.status_code, 200)
-        pipeline_factory.assert_called_once_with(paths=self.paths, use_cached_html=False)
+        pipeline_factory.assert_called_once_with(paths=self.paths, use_cached_html=False, audio_generator=ANY)
         mock_pipeline.run.assert_called_once_with(self.article.source_url)
         page = response.get_data(as_text=True)
         self.assertIn("Your episode is ready.", page)

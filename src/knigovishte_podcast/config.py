@@ -124,6 +124,7 @@ class GoogleTTSConfig:
     en_language_code: str = "en-US"
     bg_voice_name: str = "bg-BG-Standard-B"
     bg_language_code: str = "bg-BG"
+    bg_speaking_rate: float = 1.0
     credentials_path: Path | None = None
 
     @classmethod
@@ -138,6 +139,12 @@ class GoogleTTSConfig:
             "GOOGLE_TTS_BG_LANGUAGE_CODE",
             google_language_code_from_voice_name(voice_name, fallback="bg-BG"),
         )
+        bg_speaking_rate_val = os.getenv("GOOGLE_TTS_BG_SPEAKING_RATE", "1.0")
+        try:
+            bg_speaking_rate = float(bg_speaking_rate_val)
+        except ValueError:
+            bg_speaking_rate = 1.0
+
         credentials_value = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
         credentials_path = Path(credentials_value) if credentials_value else None
         return cls(
@@ -145,6 +152,7 @@ class GoogleTTSConfig:
             en_language_code=en_language_code,
             bg_voice_name=voice_name,
             bg_language_code=language_code,
+            bg_speaking_rate=bg_speaking_rate,
             credentials_path=credentials_path,
         )
 

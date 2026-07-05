@@ -70,6 +70,7 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         bg_voice_name: str | None = None,
         google_tts_config: GoogleTTSConfig | None = None,
         google_client: Any | None = None,
+        bg_speaking_rate: float | None = None,
     ) -> None:
         self.voice_name = voice_name
         self.rate = rate
@@ -77,6 +78,11 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
         self.bg_voice_name = bg_voice_name
         self.google_tts_config = google_tts_config or GoogleTTSConfig.from_env()
         self._google_client = google_client
+        self.bg_speaking_rate = (
+            bg_speaking_rate
+            if bg_speaking_rate is not None
+            else self.google_tts_config.bg_speaking_rate
+        )
 
     def generate(self, script_text: str, episode_slug: str) -> Path:
         if not script_text or not script_text.strip():
@@ -128,18 +134,26 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
                 language_code=self._google_language_code_for_voice("en", self.voice_name),
             )
             return
-        self._synthesize_local_segment(script_text, audio_path, self.voice_name)
+        self._synthesize_local_segment(script_text, audio_path, self.voice_name, is_bg=False)
 
     def _synthesize_local_segment(
         self,
         text: str,
         audio_path: Path,
         voice_name: str | None,
+        is_bg: bool = False,
     ) -> None:
         with _windows_com_initialized():
             engine = pyttsx3.init()
             try:
-                if self.rate is not None:
+                if is_bg and self.bg_speaking_rate is not None:
+                    raw_rate = self.rate if self.rate is not None else engine.getProperty("rate")
+                    try:
+                        base_rate = int(raw_rate)
+                    except (ValueError, TypeError):
+                        base_rate = 200
+                    engine.setProperty("rate", int(base_rate * self.bg_speaking_rate))
+                elif self.rate is not None:
                     engine.setProperty("rate", self.rate)
                 if self.volume is not None:
                     engine.setProperty("volume", self.volume)
@@ -169,7 +183,7 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
                         language_code=self._google_language_code_for_voice(lang, voice_name),
                     )
                 else:
-                    self._synthesize_local_segment(text, temp_path, voice_name)
+                    self._synthesize_local_segment(text, temp_path, voice_name, is_bg=(lang == "bg"))
                 temp_files.append(temp_path)
             _concatenate_wav_files(temp_files, audio_path)
         finally:
@@ -210,15 +224,18 @@ class Pyttsx3PodcastAudioGenerator(PodcastAudioGenerator):
             )
 
         client = self._get_google_client()
+        speaking_rate = self.bg_speaking_rate if language_code.startswith("bg") else 1.0
+        audio_config_params = {"audio_encoding": google_api.AudioEncoding.LINEAR16}
+        if speaking_rate != 1.0:
+            audio_config_params["speaking_rate"] = speaking_rate
+
         response = client.synthesize_speech(
             input=google_api.SynthesisInput(text=text),
             voice=google_api.VoiceSelectionParams(
                 language_code=language_code,
                 name=voice_name,
             ),
-            audio_config=google_api.AudioConfig(
-                audio_encoding=google_api.AudioEncoding.LINEAR16
-            ),
+            audio_config=google_api.AudioConfig(**audio_config_params),
         )
         audio_content = getattr(response, "audio_content", b"")
         if not audio_content:
@@ -260,6 +277,7 @@ def build_default_audio_generator(
     bg_voice_name: str | None = None,
     rate: int | None = None,
     volume: float | None = None,
+    bg_speaking_rate: float | None = None,
 ) -> Pyttsx3PodcastAudioGenerator:
     google_tts_config = GoogleTTSConfig.from_env()
     return Pyttsx3PodcastAudioGenerator(
@@ -268,6 +286,7 @@ def build_default_audio_generator(
         volume=volume,
         bg_voice_name=bg_voice_name or google_tts_config.bg_voice_name,
         google_tts_config=google_tts_config,
+        bg_speaking_rate=bg_speaking_rate,
     )
 
 

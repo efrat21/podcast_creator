@@ -173,6 +173,13 @@ def _add_voice_arguments(parser: argparse.ArgumentParser) -> None:
         "Google Cloud voice bg-BG-Standard-B; local pyttsx3 voice names still work "
         "when passed explicitly.",
     )
+    parser.add_argument(
+        "--bg-speed",
+        type=float,
+        default=1.0,
+        help="Speaking speed multiplier for the Bulgarian voice (e.g. 0.8 for slower). "
+        "Defaults to 1.0. Valid range: 0.25 to 4.0.",
+    )
 
 
 def _load_article(
@@ -349,6 +356,7 @@ def _run_generate_audio(args: argparse.Namespace) -> int:
     audio_path = build_default_audio_generator(
         voice_name=args.en_voice or None,
         bg_voice_name=args.bg_voice or None,
+        bg_speaking_rate=args.bg_speed,
     ).generate(
         script_text,
         episode_slug_from_url(article.source_url),
@@ -376,6 +384,7 @@ def _run_pipeline(args: argparse.Namespace) -> int:
             audio_generator=build_default_audio_generator(
                 voice_name=args.en_voice or None,
                 bg_voice_name=args.bg_voice or None,
+                bg_speaking_rate=args.bg_speed,
             ),
         ).run(article_url)
     except DuplicateArticleError as exc:
@@ -425,6 +434,7 @@ def _run_daily_check(args: argparse.Namespace) -> int:
         audio_generator=build_default_audio_generator(
             voice_name=args.en_voice or None,
             bg_voice_name=args.bg_voice or None,
+            bg_speaking_rate=args.bg_speed,
         ),
     )
     selector = ArticleSelector()
@@ -451,6 +461,7 @@ def _run_daily_daemon(args: argparse.Namespace) -> int:
         audio_generator=build_default_audio_generator(
             voice_name=args.en_voice or None,
             bg_voice_name=args.bg_voice or None,
+            bg_speaking_rate=args.bg_speed,
         ),
     )
     selector = ArticleSelector()

@@ -10,6 +10,7 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from .config import ProjectPaths
 from .pipeline import pipeline
 from .services.article_selector import ArticleFilter, ArticleSelector
+from .services.tts import build_default_audio_generator
 from .services.dedup import DuplicateArticleError
 from .services.fetcher import _normalize_knigovishte_url
 from .services.translator import LangblyTimeoutError
@@ -339,6 +340,17 @@ PAGE_TEMPLATE = """
           </select>
         </div>
 
+        <div class="form-group">
+          <label for="bg_speed">Bulgarian Voice Speed</label>
+          <select id="bg_speed" name="bg_speed">
+            <option value="0.8" {% if form.bg_speed == "0.8" %}selected{% endif %}>0.8x (Slower, recommended for learning)</option>
+            <option value="0.9" {% if form.bg_speed == "0.9" %}selected{% endif %}>0.9x</option>
+            <option value="1.0" {% if not form.bg_speed or form.bg_speed == "1.0" %}selected{% endif %}>1.0x (Normal)</option>
+            <option value="1.1" {% if form.bg_speed == "1.1" %}selected{% endif %}>1.1x</option>
+            <option value="1.2" {% if form.bg_speed == "1.2" %}selected{% endif %}>1.2x</option>
+          </select>
+        </div>
+
         <div class="form-group checkbox-group">
           <input id="refresh" name="refresh" type="checkbox" {% if form.refresh %}checked{% endif %}>
           <label for="refresh" class="checkbox-label">Ignore cached HTML and fetch the article again</label>
@@ -459,6 +471,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                 "max_length": "",
                 "category": "",
                 "refresh": False,
+                "bg_speed": "1.0",
             },
             error="Request body is too large for this recruiter-facing showcase page.",
             status_code=413,
@@ -472,6 +485,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
         max_length_value = request.form.get("max_length", "")
         category_value = request.form.get("category", "")
         refresh_requested = request.form.get("refresh") == "on"
+        bg_speed_value = request.form.get("bg_speed", "1.0")
         result: dict[str, object] | None = None
         error: str | None = None
 
@@ -503,9 +517,22 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                     max_length=max_length_value,
                     category=category_value,
                 )
+                bg_speed_value = _clean_form_value(
+                    bg_speed_value,
+                    field_name="Bulgarian voice speed",
+                    max_length=MAX_FILTER_VALUE_LENGTH,
+                )
+                try:
+                    bg_speed_float = float(bg_speed_value)
+                except ValueError:
+                    bg_speed_float = 1.0
+
                 pipeline(
                     paths=project_paths,
                     use_cached_html=not refresh_requested,
+                    audio_generator=build_default_audio_generator(
+                        bg_speaking_rate=bg_speed_float
+                    ),
                 ).run(article_url)
                 _rebuild_rss_and_push(project_paths)
                 result = {"ready": True}
@@ -521,6 +548,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
             min_length_value = min_length_value.strip()
             max_length_value = max_length_value.strip()
             category_value = category_value.strip()
+            bg_speed_value = bg_speed_value.strip()
 
         return _render_page(
             project_paths,
@@ -530,6 +558,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                 "max_length": max_length_value,
                 "category": category_value,
                 "refresh": refresh_requested,
+                "bg_speed": bg_speed_value,
             },
             result=result,
             error=error,

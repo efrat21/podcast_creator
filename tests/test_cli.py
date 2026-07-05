@@ -6,7 +6,7 @@ import sys
 import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, ANY
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -182,7 +182,7 @@ class CliCommandTests(unittest.TestCase):
                                 exit_code = main(["generate-audio", "--url", self.article.source_url, "--refresh"])
 
         self.assertEqual(exit_code, 0)
-        audio_factory.assert_called_once_with(voice_name=None, bg_voice_name=None)
+        audio_factory.assert_called_once_with(voice_name=None, bg_voice_name=None, bg_speaking_rate=1.0)
         self.assertEqual(fetcher.fetch_html_calls, 1)
         self.assertTrue(expected_script_path.exists())
         self.assertTrue(expected_audio_path.exists())
@@ -224,6 +224,7 @@ class CliCommandTests(unittest.TestCase):
         audio_factory.assert_called_once_with(
             voice_name="en-US-Standard-C",
             bg_voice_name="bg-BG-Standard-B",
+            bg_speaking_rate=1.0,
         )
 
     def test_generate_audio_command_skips_duplicate_article(self) -> None:
@@ -348,6 +349,37 @@ class CliCommandTests(unittest.TestCase):
         audio_mock.assert_called_once_with(
             voice_name="en-GB-Standard-A",
             bg_voice_name="bg-BG-Standard-B",
+            bg_speaking_rate=1.0,
+        )
+
+    def test_daily_check_command_passes_bg_speed_override(self) -> None:
+        """Test daily-check command with bg-speed override."""
+        stdout = io.StringIO()
+        mock_pipeline = Mock()
+        mock_pipeline.run.return_value = Mock()
+        
+        with patch("knigovishte_podcast.cli.ProjectPaths.from_root", return_value=self.paths):
+            with patch("knigovishte_podcast.cli.build_pipeline") as build_pipeline_mock:
+                build_pipeline_mock.return_value = mock_pipeline
+
+                with patch("knigovishte_podcast.cli.ArticleSelector") as selector_mock:
+                    selector_instance = Mock()
+                    selector_instance.select_article.return_value = self.article
+                    selector_mock.return_value = selector_instance
+
+                    with patch("knigovishte_podcast.cli.build_default_audio_generator") as audio_mock:
+                        audio_mock.return_value = Mock()
+                        with redirect_stdout(stdout):
+                            exit_code = main([
+                                "daily-check",
+                                "--bg-speed", "0.8",
+                            ])
+
+        self.assertEqual(exit_code, 0)
+        audio_mock.assert_called_once_with(
+            voice_name=None,
+            bg_voice_name=None,
+            bg_speaking_rate=0.8,
         )
 
     def test_local_rss_delivery_command_rebuilds_feed_without_serving(self) -> None:

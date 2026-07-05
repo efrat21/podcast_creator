@@ -763,6 +763,96 @@ class BilingualAudioGeneratorTests(unittest.TestCase):
             self.assertIn("bg-voice-id", voice_ids_used)
             self.assertNotIn("en-voice-id", voice_ids_used)
 
+    def test_speaking_rate_google(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            google_client = MagicMock()
+            google_client.synthesize_speech.return_value = SimpleNamespace(
+                audio_content=self._make_wav_bytes()
+            )
+
+            en_voice = "en-US-Standard-F"
+            bg_voice = "bg-BG-Standard-B"
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch(
+                    "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                    side_effect=self._fake_mp3_export,
+                ):
+                    generator = Pyttsx3PodcastAudioGenerator(
+                        voice_name=en_voice,
+                        bg_voice_name=bg_voice,
+                        google_client=google_client,
+                        bg_speaking_rate=0.8,
+                    )
+                    
+                    script = "English title: Intro\nBulgarian title: Заглавие"
+                    generator.generate(script, "ep")
+
+            calls = google_client.synthesize_speech.call_args_list
+            self.assertEqual(len(calls), 2)
+            
+            en_audio_config = calls[0].kwargs["audio_config"]
+            self.assertNotIn("speaking_rate", en_audio_config)
+            
+            bg_audio_config = calls[1].kwargs["audio_config"]
+            self.assertEqual(bg_audio_config.speaking_rate, 0.8)
+
+    def test_speaking_rate_local(self) -> None:
+        with TemporaryDirectory() as tmpdir:
+            project_root = Path(tmpdir)
+
+            class DummyPaths:
+                root = project_root
+                audio = project_root / "audio"
+                def ensure(self) -> None:
+                    self.audio.mkdir(parents=True, exist_ok=True)
+
+            audio_path = project_root / "audio" / f"ep{AUDIO_FILE_EXTENSION}"
+            mock_engine = self._make_dummy_engine(audio_path)
+            
+            mock_engine.getProperty.return_value = [
+                SimpleNamespace(id="local_en", name="English Local"),
+                SimpleNamespace(id="local_bg", name="Bulgarian Local"),
+            ]
+
+            en_voice = "local_en"
+            bg_voice = "local_bg"
+
+            with patch(
+                "knigovishte_podcast.services.tts.ProjectPaths.from_root",
+                return_value=DummyPaths(),
+            ):
+                with patch("knigovishte_podcast.services.tts.pyttsx3.init", return_value=mock_engine):
+                    with patch(
+                        "knigovishte_podcast.services.tts._convert_wav_to_mp3",
+                        side_effect=self._fake_mp3_export,
+                    ):
+                        generator = Pyttsx3PodcastAudioGenerator(
+                            voice_name=en_voice,
+                            bg_voice_name=bg_voice,
+                            rate=150,
+                            bg_speaking_rate=0.8,
+                        )
+                        generator.generate("English title: Intro\nBulgarian title: Заглавие", "ep")
+
+            set_rate_calls = [
+                call for call in mock_engine.setProperty.call_args_list if call[0][0] == "rate"
+            ]
+            self.assertEqual(len(set_rate_calls), 2)
+            self.assertEqual(set_rate_calls[0][0][1], 150)
+            self.assertEqual(set_rate_calls[1][0][1], 120)
+
 
 class BuildDefaultAudioGeneratorTests(unittest.TestCase):
     def test_default_factory_uses_google_english_and_bulgarian_voices(self) -> None:
