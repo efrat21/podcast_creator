@@ -201,7 +201,7 @@ class DailyEpisodeScheduler:
                     if result.skip_reason and ("Failed to fetch" in result.skip_reason or "Pipeline error" in result.skip_reason):
                         self._notify_failure(f"Daily check failed: {result.skip_reason}")
 
-                    if "Pipeline error" in result.skip_reason:
+                    if result.skip_reason and "Pipeline error" in result.skip_reason:
                         print("Encountered pipeline error, will retry in 5 minutes.")
                         time.sleep(300)  # Wait 5 minutes before next check on error
                     else:
@@ -247,11 +247,17 @@ class DailyEpisodeScheduler:
     def _print_result(result: DailyCheckResult) -> None:
         """Print a human-readable result."""
         if result.new_episode_created:
-            print("✓ New episode created!")
+            try:
+                print("✓ New episode created!")
+            except UnicodeEncodeError:
+                print("[OK] New episode created!")
             print(f"  Article: {result.article_url}")
             print(f"  Audio: {result.episode_path}")
         else:
-            print("○ No new episode")
+            try:
+                print("○ No new episode")
+            except UnicodeEncodeError:
+                print("No new episode")
             if result.skip_reason:
                 print(f"  Reason: {result.skip_reason}")
             if result.article_url:

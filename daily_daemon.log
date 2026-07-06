@@ -43,3 +43,14 @@ last_episode_path: data\audio\vijte-7756-v-turtsiya-bez-da-iskat-postaviha-romya
   Reason: Latest article already processed
   Article checked: https://www.knigovishte.bg/vijte/7756-v-turtsiya-bez-da-iskat-postaviha-romyau-i-zhulieta%E2%80%9C
 
+[2026-07-06 14:00:08] Starting daily-daemon wrapper...
+Daily episode scheduler started.
+Will check once per day for new articles. Press Ctrl+C to stop.
+
+Checking for new article at 2026-07-06T14:00:13.670346
+Γ£ô New episode created!
+  Article: https://www.knigovishte.bg/vijte/7779-tri-novini-ot-sveta
+  Audio: D:\podcast_creator\data\audio\vijte-7779-tri-novini-ot-sveta.mp3
+
+Daily Daemon failed: argument of type 'NoneType' is not iterable
+[2026-07-06 14:02:51] daily-daemon exited with code 1

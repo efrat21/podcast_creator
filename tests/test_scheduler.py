@@ -263,6 +263,27 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
         self.scheduler.state_path.write_text("not valid json", encoding="utf-8")
         self.assertIsNone(self.scheduler._load_state())
 
+    def test_run_daemon_successful_check_does_not_raise(self) -> None:
+        """run_daemon should handle a successful check with skip_reason=None without raising a TypeError."""
+        from unittest.mock import patch
+        from knigovishte_podcast.services.scheduler import DailyCheckResult
+
+        success_result = DailyCheckResult(
+            checked_at=datetime.now().isoformat(),
+            new_episode_created=True,
+            article_url="https://example.com/article",
+            episode_path=Path("dummy.mp3"),
+            skip_reason=None,
+        )
+        self.scheduler.check_and_generate = Mock(return_value=success_result)
+
+        should_check_mock = Mock(side_effect=[True, KeyboardInterrupt("Stop loop")])
+        self.scheduler.should_check_today = should_check_mock
+
+        with patch("knigovishte_podcast.services.scheduler.time.sleep") as mock_sleep:
+            self.scheduler.run_daemon(check_interval_seconds=10)
+            mock_sleep.assert_called_once_with(10)
+
 
 if __name__ == "__main__":
     unittest.main()
