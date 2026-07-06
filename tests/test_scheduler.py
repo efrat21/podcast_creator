@@ -59,6 +59,7 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
             article_selector=self.mock_selector,
             paths=self.paths,
         )
+        self.scheduler._rebuild_rss_and_push = Mock()
 
         # Clean up state file
         if self.scheduler.state_path.exists():
@@ -283,6 +284,54 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
         with patch("knigovishte_podcast.services.scheduler.time.sleep") as mock_sleep:
             self.scheduler.run_daemon(check_interval_seconds=10)
             mock_sleep.assert_called_once_with(10)
+
+    def test_check_and_generate_calls_rebuild_rss_and_push(self) -> None:
+        """Should call _rebuild_rss_and_push on successful run."""
+        article = Article(
+            source_url="https://knigovishte.bg/article/123",
+            title_bg="Тест заглавие",
+            sentences_bg=["Изречение едно."],
+        )
+        audio_path = self.paths.audio / "article-123.mp3"
+        audio_path.touch()
+
+        plan = PodcastPlan(
+            article=article,
+            translation=Translation(title_en="Test Title", sentences_en=["One."]),
+            script_text="Bulgarian:\nТест заглавие\n\nEnglish:\nTest Title\n",
+            script_path=self.paths.scripts / "article-123.txt",
+            audio_path=audio_path,
+            article_html_path=None,
+        )
+
+        self.mock_selector.select_article.return_value = article
+        self.mock_pipeline.run.return_value = plan
+
+        rebuild_mock = Mock()
+        self.scheduler._rebuild_rss_and_push = rebuild_mock
+
+        result = self.scheduler.check_and_generate()
+
+        self.assertTrue(result.new_episode_created)
+        rebuild_mock.assert_called_once()
+
+    def test_check_and_generate_does_not_call_rebuild_rss_and_push_on_duplicate(self) -> None:
+        """Should not call _rebuild_rss_and_push on duplicate."""
+        article = Article(
+            source_url="https://knigovishte.bg/article/123",
+            title_bg="Тест заглавие",
+            sentences_bg=["Изречение едно."],
+        )
+        self.mock_selector.select_article.return_value = article
+        self.mock_pipeline.run.side_effect = DuplicateArticleError(article=article, audio_path=Path("dummy.mp3"))
+
+        rebuild_mock = Mock()
+        self.scheduler._rebuild_rss_and_push = rebuild_mock
+
+        result = self.scheduler.check_and_generate()
+
+        self.assertFalse(result.new_episode_created)
+        rebuild_mock.assert_not_called()
 
 
 if __name__ == "__main__":

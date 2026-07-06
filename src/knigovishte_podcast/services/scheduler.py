@@ -114,6 +114,8 @@ class DailyEpisodeScheduler:
             )
             self._save_state(new_state)
 
+            self._rebuild_rss_and_push()
+
             return DailyCheckResult(
                 checked_at=check_time,
                 new_episode_created=True,
@@ -262,3 +264,29 @@ class DailyEpisodeScheduler:
                 print(f"  Reason: {result.skip_reason}")
             if result.article_url:
                 print(f"  Article checked: {result.article_url}")
+
+    def _rebuild_rss_and_push(self) -> None:
+        import subprocess
+        from .rss import LocalRSSService
+
+        # 1. Rebuild RSS feed
+        try:
+            rss_service = LocalRSSService(self.paths)
+            public_base_url = rss_service.build_public_base_url(
+                bind_host="0.0.0.0",
+                port=8000,
+            )
+            rss_service.rebuild_feed(public_base_url)
+            print("✓ RSS feed rebuilt successfully.")
+        except Exception as e:
+            print(f"Error rebuilding RSS feed: {e}")
+
+        # 2. Git add, commit, and push
+        root_str = str(self.paths.root)
+        try:
+            subprocess.run(["git", "add", "data/rss/"], check=True, cwd=root_str)
+            subprocess.run(["git", "commit", "-m", "Add new podcast episode (automated daily check)"], check=False, cwd=root_str)
+            subprocess.run(["git", "push"], check=True, cwd=root_str)
+            print("✓ Pushed updated RSS feed to GitHub.")
+        except Exception as git_exc:
+            print(f"Git operations failed: {git_exc}")
