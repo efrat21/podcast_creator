@@ -279,9 +279,11 @@ class LocalRSSServiceTests(unittest.TestCase):
         self.service.rebuild_feed("http://127.0.0.1:8000")
         feed_xml = (self.paths.rss / "podcast.xml").read_text(encoding="utf-8")
         
-        self.assertIn("<itunes:author>Knigovishte Podcast Creator</itunes:author>", feed_xml)
-        self.assertIn("<itunes:name>Knigovishte Podcast Creator</itunes:name>", feed_xml)
-        self.assertIn("<itunes:email>efrat.podcast@example.com</itunes:email>", feed_xml)
+        self.assertIn("<!-- 1. THE AUTHOR TAG -->", feed_xml)
+        self.assertIn("<itunes:author>Efrat Miyara</itunes:author>", feed_xml)
+        self.assertIn("<!-- 2. THE EMAIL TAG -->", feed_xml)
+        self.assertIn("<itunes:name>Efrat Miyara</itunes:name>", feed_xml)
+        self.assertIn("<itunes:email>Efrat.baker@gmail.com</itunes:email>", feed_xml)
         self.assertIn("<itunes:explicit>no</itunes:explicit>", feed_xml)
 
         # 2. Test overrides from environment

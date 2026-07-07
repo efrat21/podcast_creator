@@ -232,11 +232,13 @@ class LocalRSSService:
             ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}image", href=image_url)
 
         # Spotify/Apple Podcasts required tags
-        author_val = os.environ.get("PODCAST_AUTHOR", "Knigovishte Podcast Creator").strip()
+        channel.append(ET.Comment(" 1. THE AUTHOR TAG "))
+        author_val = os.environ.get("PODCAST_AUTHOR", "Efrat Miyara").strip()
         ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}author").text = author_val
 
-        owner_name = os.environ.get("PODCAST_OWNER_NAME", "Knigovishte Podcast Creator").strip()
-        owner_email = os.environ.get("PODCAST_OWNER_EMAIL", "efrat.podcast@example.com").strip()
+        channel.append(ET.Comment(" 2. THE EMAIL TAG "))
+        owner_name = os.environ.get("PODCAST_OWNER_NAME", "Efrat Miyara").strip()
+        owner_email = os.environ.get("PODCAST_OWNER_EMAIL", "Efrat.baker@gmail.com").strip()
         
         owner_el = ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}owner")
         ET.SubElement(owner_el, f"{{{ITUNES_NAMESPACE}}}name").text = owner_name
