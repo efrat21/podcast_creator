@@ -270,3 +270,35 @@ class LocalRSSServiceTests(unittest.TestCase):
             )
 
         self.assertFalse(handler.close_connection)
+
+    def test_rebuild_feed_includes_spotify_itunes_tags(self) -> None:
+        audio = self.paths.audio / "episode.mp3"
+        audio.write_bytes(b"audio")
+
+        # 1. Test defaults
+        self.service.rebuild_feed("http://127.0.0.1:8000")
+        feed_xml = (self.paths.rss / "podcast.xml").read_text(encoding="utf-8")
+        
+        self.assertIn("<itunes:author>Knigovishte Podcast Creator</itunes:author>", feed_xml)
+        self.assertIn("<itunes:name>Knigovishte Podcast Creator</itunes:name>", feed_xml)
+        self.assertIn("<itunes:email>efrat.podcast@example.com</itunes:email>", feed_xml)
+        self.assertIn("<itunes:explicit>no</itunes:explicit>", feed_xml)
+
+        # 2. Test overrides from environment
+        os.environ["PODCAST_AUTHOR"] = "My Custom Author"
+        os.environ["PODCAST_OWNER_NAME"] = "My Custom Owner"
+        os.environ["PODCAST_OWNER_EMAIL"] = "custom-owner@example.com"
+        os.environ["PODCAST_EXPLICIT"] = "yes"
+        try:
+            self.service.rebuild_feed("http://127.0.0.1:8000")
+            feed_xml_override = (self.paths.rss / "podcast.xml").read_text(encoding="utf-8")
+            
+            self.assertIn("<itunes:author>My Custom Author</itunes:author>", feed_xml_override)
+            self.assertIn("<itunes:name>My Custom Owner</itunes:name>", feed_xml_override)
+            self.assertIn("<itunes:email>custom-owner@example.com</itunes:email>", feed_xml_override)
+            self.assertIn("<itunes:explicit>yes</itunes:explicit>", feed_xml_override)
+        finally:
+            os.environ.pop("PODCAST_AUTHOR", None)
+            os.environ.pop("PODCAST_OWNER_NAME", None)
+            os.environ.pop("PODCAST_OWNER_EMAIL", None)
+            os.environ.pop("PODCAST_EXPLICIT", None)

@@ -231,6 +231,22 @@ class LocalRSSService:
             ET.SubElement(image, "link").text = f"{public_base_url}/podcast.xml"
             ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}image", href=image_url)
 
+        # Spotify/Apple Podcasts required tags
+        author_val = os.environ.get("PODCAST_AUTHOR", "Knigovishte Podcast Creator").strip()
+        ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}author").text = author_val
+
+        owner_name = os.environ.get("PODCAST_OWNER_NAME", "Knigovishte Podcast Creator").strip()
+        owner_email = os.environ.get("PODCAST_OWNER_EMAIL", "efrat.podcast@example.com").strip()
+        
+        owner_el = ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}owner")
+        ET.SubElement(owner_el, f"{{{ITUNES_NAMESPACE}}}name").text = owner_name
+        ET.SubElement(owner_el, f"{{{ITUNES_NAMESPACE}}}email").text = owner_email
+
+        explicit_val = os.environ.get("PODCAST_EXPLICIT", "no").strip().lower()
+        if explicit_val not in {"yes", "no", "clean"}:
+            explicit_val = "no"
+        ET.SubElement(channel, f"{{{ITUNES_NAMESPACE}}}explicit").text = explicit_val
+
         for staged_path in staged_episode_paths:
             item = ET.SubElement(channel, "item")
             title = self._episode_title_from_path(staged_path)
