@@ -8,7 +8,7 @@ This project was created using **agents vibe coding**, with AI-assisted developm
 
 > [!NOTE]
 >
-> * **If you only want to listen to existing episodes:** You do not need to install or configure anything. Simply copy the RSS feed URL **https://efrat21.github.io/podcast_creator/data/rss/podcast.xml** and add it to your favorite podcast app. see **[Listening to Episodes](#2-listening-to-episodes)** section for detailed explanations.
+> * **If you only want to listen to existing episodes:** You do not need to install or configure anything. You can listen directly on **[Spotify](https://open.spotify.com/show/033Lis2JG8HLqYMIi92doV)**, or copy the RSS feed URL **https://efrat21.github.io/podcast_creator/data/rss/podcast.xml** and add it to your favorite podcast app (see the **[Listening to Episodes](#2-listening-to-episodes)** section for details).
 > * **If you want to create new episodes or modify the application:** Follow the **[Quick Setup](#quick-setup)** below to clone, install, and configure the project.
 
 ### Quick Setup
@@ -30,15 +30,15 @@ This project was created using **agents vibe coding**, with AI-assisted developm
 ---
 
 ## 2. Listening to Episodes
-You can subscribe to and listen to all generated episodes on any RSS-friendly podcast player (such as **Podcast Addict** on Android or **Apple Podcasts**):
+You can subscribe to and listen to all generated episodes on **[Spotify](https://open.spotify.com/show/033Lis2JG8HLqYMIi92doV)** or on any RSS-friendly podcast player (such as **Podcast Addict** on Android or **Apple Podcasts**):
 
-1. Copy your public feed URL:
-   ```text
-   https://<your-github-username>.github.io/<your-repository-name>/data/rss/podcast.xml
-   ```
-2. Open your podcast application.
-3. Select **Add Podcast by URL** (or RSS Feed) and paste the URL.
-4. Subscribe to get all current and future episodes delivered automatically.
+1. **Listen on Spotify**: Open our [Spotify Show page](https://open.spotify.com/show/033Lis2JG8HLqYMIi92doV) and click follow.
+2. **Subscribe via RSS Feed**:
+   * Copy the public feed URL:
+     ```text
+     https://efrat21.github.io/podcast_creator/data/rss/podcast.xml
+     ```
+   * Open your podcast application, select **Add Podcast by URL** (or RSS Feed), and paste the URL.
 
 ---
 
