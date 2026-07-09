@@ -202,32 +202,36 @@ class DailyEpisodeScheduler:
             force_check = False
             retry_count = 0
             while True:
-                if self.should_check_today() or force_check:
-                    print(f"Checking for new article at {datetime.now().isoformat()}")
-                    result = self.check_and_generate()
-                    self._print_result(result)
-                    print()
-                    
-                    if result.skip_reason and ("Failed to fetch" in result.skip_reason or "Pipeline error" in result.skip_reason):
-                        self._notify_failure(f"Daily check failed: {result.skip_reason}")
+                try:
+                    if self.should_check_today() or force_check:
+                        print(f"Checking for new article at {datetime.now().isoformat()}")
+                        result = self.check_and_generate()
+                        self._print_result(result)
+                        print()
+                        
+                        if result.skip_reason and ("Failed to fetch" in result.skip_reason or "Pipeline error" in result.skip_reason):
+                            self._notify_failure(f"Daily check failed: {result.skip_reason}")
 
-                    if result.skip_reason and "Pipeline error" in result.skip_reason:
-                        retry_count += 1
-                        if retry_count <= 3:
-                            print(f"Encountered pipeline error. Retry {retry_count}/3 in 5 minutes.")
-                            force_check = True
-                            time.sleep(300)  # Wait 5 minutes before next check on error
+                        if result.skip_reason and "Pipeline error" in result.skip_reason:
+                            retry_count += 1
+                            if retry_count <= 3:
+                                print(f"Encountered pipeline error. Retry {retry_count}/3 in 5 minutes.")
+                                force_check = True
+                                time.sleep(300)  # Wait 5 minutes before next check on error
+                            else:
+                                print("Encountered persistent pipeline errors. Max retries reached. Will try again tomorrow.")
+                                force_check = False
+                                retry_count = 0
+                                time.sleep(check_interval_seconds)
                         else:
-                            print("Encountered persistent pipeline errors. Max retries reached. Will try again tomorrow.")
                             force_check = False
                             retry_count = 0
                             time.sleep(check_interval_seconds)
                     else:
-                        force_check = False
-                        retry_count = 0
-                        time.sleep(check_interval_seconds)
-                else:
-                    time.sleep(60)
+                        time.sleep(60)
+                except Exception as e:
+                    print(f"[{datetime.now().isoformat()}] Unexpected error in daemon loop: {e}")
+                    time.sleep(300)  # Wait 5 minutes on unexpected error before retrying
 
         except KeyboardInterrupt:
             print("\nScheduler stopped by user.")
