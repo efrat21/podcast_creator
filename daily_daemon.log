@@ -54,3 +54,7 @@ Checking for new article at 2026-07-06T14:00:13.670346
 
 Daily Daemon failed: argument of type 'NoneType' is not iterable
 [2026-07-06 14:02:51] daily-daemon exited with code 1
+[2026-07-07 14:00:05] Starting daily-daemon wrapper...
+Daily episode scheduler started.
+Will check once per day for new articles. Press Ctrl+C to stop.
+

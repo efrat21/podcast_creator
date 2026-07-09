@@ -333,6 +333,31 @@ class TestDailyEpisodeScheduler(unittest.TestCase):
         self.assertFalse(result.new_episode_created)
         rebuild_mock.assert_not_called()
 
+    def test_run_daemon_retries_on_pipeline_error_and_stops_after_max(self) -> None:
+        """run_daemon should retry up to 3 times on pipeline error and then stop forcing check."""
+        from unittest.mock import patch
+        from knigovishte_podcast.services.scheduler import DailyCheckResult
+
+        error_result = DailyCheckResult(
+            checked_at=datetime.now().isoformat(),
+            new_episode_created=False,
+            article_url="https://example.com/article",
+            episode_path=None,
+            skip_reason="Pipeline error: Connection lost",
+        )
+        self.scheduler.check_and_generate = Mock(return_value=error_result)
+
+        should_check_mock = Mock(side_effect=[True, False, False, False, KeyboardInterrupt("Stop loop")])
+        self.scheduler.should_check_today = should_check_mock
+
+        with patch("knigovishte_podcast.services.scheduler.time.sleep") as mock_sleep:
+            self.scheduler.run_daemon(check_interval_seconds=86400)
+            
+            self.assertEqual(self.scheduler.check_and_generate.call_count, 4)
+            self.assertEqual(mock_sleep.call_count, 4)
+            mock_sleep.assert_any_call(300)
+            mock_sleep.assert_any_call(86400)
+
 
 if __name__ == "__main__":
     unittest.main()

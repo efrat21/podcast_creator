@@ -97,6 +97,12 @@ class DailyEpisodeScheduler:
         if state and state.last_article_url == latest_article.source_url:
             print(f"last_article_url: {state.last_article_url}")
             print(f"last_episode_path: {state.last_episode_path}")
+            new_state = SchedulerState(
+                last_check_time=check_time,
+                last_article_url=state.last_article_url,
+                last_episode_path=state.last_episode_path,
+            )
+            self._save_state(new_state)
             return DailyCheckResult(
                 checked_at=check_time,
                 new_episode_created=False,
@@ -193,8 +199,10 @@ class DailyEpisodeScheduler:
         print()
 
         try:
+            force_check = False
+            retry_count = 0
             while True:
-                if self.should_check_today():
+                if self.should_check_today() or force_check:
                     print(f"Checking for new article at {datetime.now().isoformat()}")
                     result = self.check_and_generate()
                     self._print_result(result)
@@ -204,10 +212,22 @@ class DailyEpisodeScheduler:
                         self._notify_failure(f"Daily check failed: {result.skip_reason}")
 
                     if result.skip_reason and "Pipeline error" in result.skip_reason:
-                        print("Encountered pipeline error, will retry in 5 minutes.")
-                        time.sleep(300)  # Wait 5 minutes before next check on error
+                        retry_count += 1
+                        if retry_count <= 3:
+                            print(f"Encountered pipeline error. Retry {retry_count}/3 in 5 minutes.")
+                            force_check = True
+                            time.sleep(300)  # Wait 5 minutes before next check on error
+                        else:
+                            print("Encountered persistent pipeline errors. Max retries reached. Will try again tomorrow.")
+                            force_check = False
+                            retry_count = 0
+                            time.sleep(check_interval_seconds)
                     else:
+                        force_check = False
+                        retry_count = 0
                         time.sleep(check_interval_seconds)
+                else:
+                    time.sleep(60)
 
         except KeyboardInterrupt:
             print("\nScheduler stopped by user.")
@@ -217,8 +237,12 @@ class DailyEpisodeScheduler:
         """Show a Windows GUI message box if running on Windows and interactive."""
         try:
             import ctypes
-            # MB_OK = 0x00000000, MB_ICONERROR = 0x00000010, MB_SYSTEMMODAL = 0x00001000
-            ctypes.windll.user32.MessageBoxW(0, message, "Podcast Creator Alert", 0x10 | 0x1000)
+            import threading
+            # Run MessageBoxW in a background daemon thread to avoid blocking the main daemon loop
+            def worker():
+                ctypes.windll.user32.MessageBoxW(0, message, "Podcast Creator Alert", 0x10 | 0x1000)
+            t = threading.Thread(target=worker, daemon=True)
+            t.start()
         except Exception:
             pass
 
