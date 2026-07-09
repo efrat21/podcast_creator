@@ -58,3 +58,7 @@ Daily Daemon failed: argument of type 'NoneType' is not iterable
 Daily episode scheduler started.
 Will check once per day for new articles. Press Ctrl+C to stop.
 
+[2026-07-09 14:00:30] Starting daily-daemon wrapper...
+Daily episode scheduler started.
+Will check once per day for new articles. Press Ctrl+C to stop.
+

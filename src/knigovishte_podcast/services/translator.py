@@ -45,7 +45,22 @@ class LangblyTranslator(ArticleTranslator):
         return Translation(title_en=title_en, sentences_en=sentences_en)
 
     def _translate_batch(self, texts: list[str]) -> list[str]:
-        """Translate a batch of texts via Langbly API."""
+        """Translate a batch of texts via Langbly API by splitting into smaller sub-batches."""
+        if not texts:
+            return []
+
+        batch_size = 15
+        translated_results: list[str] = []
+
+        for i in range(0, len(texts), batch_size):
+            sub_batch = texts[i : i + batch_size]
+            sub_translated = self._translate_sub_batch(sub_batch)
+            translated_results.extend(sub_translated)
+
+        return translated_results
+
+    def _translate_sub_batch(self, texts: list[str]) -> list[str]:
+        """Translate a single sub-batch of texts via Langbly API."""
         if not texts:
             return []
 

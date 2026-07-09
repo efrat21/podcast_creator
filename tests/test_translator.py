@@ -211,6 +211,29 @@ class LangblyTranslatorTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "Failed to parse Langbly API response"):
                 LangblyTranslator(self.config).translate(self.article)
 
+    def test_translate_splits_large_batch_into_sub_batches(self) -> None:
+        """Should split large translation batches into sub-batches of 15 and merge them."""
+        large_article = Article(
+            source_url="https://example.com",
+            title_bg="Заглавие",
+            sentences_bg=tuple(f"Изречение {i}." for i in range(20)),
+        )
+        
+        response1 = self._mock_response([{"translatedText": f"Trans {i}"} for i in range(15)])
+        response2 = self._mock_response([{"translatedText": f"Trans {i}"} for i in range(15, 21)])
+
+        with patch(
+            "knigovishte_podcast.services.translator.requests.post",
+            side_effect=[response1, response2],
+        ) as mock_post:
+            result = LangblyTranslator(self.config).translate(large_article)
+
+        self.assertEqual(mock_post.call_count, 2)
+        self.assertEqual(result.title_en, "Trans 0")
+        self.assertEqual(len(result.sentences_en), 20)
+        self.assertEqual(result.sentences_en[0], "Trans 1")
+        self.assertEqual(result.sentences_en[19], "Trans 20")
+
 
 if __name__ == "__main__":
     unittest.main()
