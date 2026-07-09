@@ -309,9 +309,10 @@ class DailyEpisodeScheduler:
         except Exception as e:
             print(f"Error rebuilding RSS feed: {e}")
 
-        # 2. Git add, commit, and push
+        # 2. Git pull, add, commit, and push
         root_str = str(self.paths.root)
         try:
+            subprocess.run(["git", "pull", "--rebase"], check=False, cwd=root_str)
             subprocess.run(["git", "add", "data/rss/"], check=True, cwd=root_str)
             subprocess.run(["git", "commit", "-m", "Add new podcast episode (automated daily check)"], check=False, cwd=root_str)
             subprocess.run(["git", "push"], check=True, cwd=root_str)
