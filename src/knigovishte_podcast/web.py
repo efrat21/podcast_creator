@@ -870,16 +870,46 @@ PAGE_TEMPLATE = """
 
       function copyRssLink(btn) {
         const link = "https://efrat21.github.io/podcast_creator/data/rss/podcast.xml";
-        navigator.clipboard.writeText(link).then(() => {
+        
+        const showFeedback = () => {
           const btnText = btn.querySelector(".btn-text");
-          const originalText = btnText.textContent;
-          btnText.textContent = "Copied!";
-          setTimeout(() => {
-            btnText.textContent = originalText;
-          }, 2000);
-        }).catch(err => {
-          console.error("Failed to copy: ", err);
-        });
+          if (btnText) {
+            const originalText = btnText.textContent;
+            btnText.textContent = "Copied!";
+            setTimeout(() => {
+              btnText.textContent = originalText;
+            }, 2000);
+          }
+        };
+
+        const fallbackCopy = () => {
+          try {
+            const textArea = document.createElement("textarea");
+            textArea.value = link;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            const successful = document.execCommand("copy");
+            document.body.removeChild(textArea);
+            if (successful) {
+              showFeedback();
+            } else {
+              alert("Failed to copy link. Please manually copy: " + link);
+            }
+          } catch (err) {
+            console.error("Fallback copy failed:", err);
+            alert("Failed to copy link. Please manually copy: " + link);
+          }
+        };
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(link).then(showFeedback).catch(fallbackCopy);
+        } else {
+          fallbackCopy();
+        }
       }
     </script>
     {% endraw %}
