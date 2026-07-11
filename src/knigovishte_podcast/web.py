@@ -96,7 +96,7 @@ PAGE_TEMPLATE = """
 
       .container {
         width: 100%;
-        max-width: 32rem;
+        max-width: 36rem;
         display: flex;
         flex-direction: column;
         gap: 2rem;
@@ -368,6 +368,180 @@ PAGE_TEMPLATE = """
         background: var(--error-bg);
         color: var(--error-text);
       }
+
+      /* Premium Nav Links Styling */
+      .links-container {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+
+      .nav-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 2rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        border: 1px solid var(--card-border);
+        background: var(--card-bg);
+        color: var(--text-primary);
+        cursor: pointer;
+      }
+
+      .nav-link:hover {
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      }
+
+      .spotify-btn:hover {
+        border-color: #1ed760;
+        color: #1ed760;
+      }
+
+      .rss-btn:hover {
+        border-color: #f26522;
+        color: #f26522;
+      }
+
+      /* Episode Library Panel */
+      .library {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        padding: 2rem;
+        border: 1px solid var(--card-border);
+        border-radius: 1rem;
+        background: var(--card-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      }
+
+      .library-title-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .library-title-row h2 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .library-toggle-icon {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        transition: transform 0.3s ease;
+      }
+
+      .library.collapsed .library-toggle-icon {
+        transform: rotate(-90deg);
+      }
+
+      .library-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        max-height: 24rem;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        transition: max-height 0.3s ease, opacity 0.3s ease;
+      }
+
+      .library.collapsed .library-list {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+      }
+
+      .library-list::-webkit-scrollbar {
+        width: 6px;
+      }
+      .library-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .library-list::-webkit-scrollbar-thumb {
+        background: var(--card-border);
+        border-radius: 3px;
+      }
+      .library-list::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      .library-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        background: rgba(17, 24, 30, 0.4);
+        border: 1px solid var(--card-border);
+        transition: transform 0.2s ease, border-color 0.2s ease;
+      }
+
+      .library-item:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+      }
+
+      .library-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .library-ep-title {
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: var(--text-primary);
+        line-height: 1.4;
+      }
+
+      .library-date {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        white-space: nowrap;
+      }
+
+      /* Custom audio controls styling */
+      audio {
+        width: 100%;
+        height: 2rem;
+        border-radius: 0.5rem;
+        outline: none;
+      }
+
+      /* Dynamic preview card */
+      .preview-card {
+        padding: 1.5rem;
+        border: 1px solid var(--success-border);
+        background: rgba(16, 185, 129, 0.05);
+        border-radius: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      .preview-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--success-text);
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
     </style>
   </head>
   <body>
@@ -375,6 +549,16 @@ PAGE_TEMPLATE = """
       <header>
         <h1>Podcast Builder</h1>
         <p class="subtitle">Convert Bulgarian articles to bilingual audio feed episodes</p>
+        <div class="links-container">
+          <a href="https://open.spotify.com/show/033Lis2JG8HLqYMIi92doV" target="_blank" class="nav-link spotify-btn">
+            <svg style="width:1.1rem;height:1.1rem" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.59 14.4c-.18.27-.53.35-.8.18-2.22-1.35-5.02-1.66-8.3-.91-.3.07-.6-.12-.67-.42-.07-.3.12-.6.42-.67 3.61-.83 6.71-.48 9.21 1.05.27.18.35.53.16.77zm1.22-2.72c-.22.36-.69.48-1.05.25-2.54-1.56-6.42-2.01-9.42-1.1-.4.12-.83-.1-.95-.5-.12-.4.1-.83.5-.95 3.43-1.04 7.72-.53 10.62 1.25.36.22.48.69.3 1.05zm.11-2.81c-3.05-1.81-8.08-1.98-10.99-1.1-.47.14-.97-.12-1.11-.6-.14-.47.12-.97.6-1.11 3.35-1.02 8.9-.82 12.42 1.27.42.25.56.8.31 1.22-.25.42-.8.56-1.23.32z"/></svg>
+            Spotify Show
+          </a>
+          <a href="https://efrat21.github.io/podcast_creator/data/rss/podcast.xml" target="_blank" class="nav-link rss-btn">
+            <svg style="width:1.1rem;height:1.1rem" viewBox="0 0 24 24" fill="currentColor"><path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM3 3c9.94 0 18 8.06 18 18h-3c0-8.28-6.72-15-15-15V3zm0 6c6.63 0 12 5.37 12 12h-3c0-4.97-4.03-9-9-9V9z"/></svg>
+            RSS Feed XML
+          </a>
+        </div>
       </header>
 
       <form id="podcast-form" method="post">
@@ -446,6 +630,29 @@ PAGE_TEMPLATE = """
           <p>{{ error }}</p>
         </section>
       {% endif %}
+
+      {% if episodes %}
+        <section id="library-section" class="library">
+          <div class="library-title-row" onclick="toggleLibrary()">
+            <h2>Episode Library ({{ episodes|length }})</h2>
+            <span class="library-toggle-icon">▼</span>
+          </div>
+          <div class="library-list">
+            {% for ep in episodes %}
+              <div class="library-item">
+                <div class="library-details">
+                  <span class="library-ep-title">{{ ep.title }}</span>
+                  <span class="library-date">{{ ep.pub_date }}</span>
+                </div>
+                <audio controls preload="none">
+                  <source src="/audio/{{ ep.filename }}" type="audio/mpeg">
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
     </div>
 
     {% raw %}
@@ -462,6 +669,9 @@ PAGE_TEMPLATE = """
 
           if (successPanel) successPanel.style.display = "none";
           if (errorPanel) errorPanel.style.display = "none";
+          
+          let previewCard = document.getElementById("preview-card");
+          if (previewCard) previewCard.style.display = "none";
           
           submitButton.disabled = true;
           submitButton.textContent = "Working...";
@@ -549,6 +759,30 @@ PAGE_TEMPLATE = """
                         updateStep(currentActiveStep, "completed");
                       }
                       
+                      if (data.episode) {
+                        let previewCard = document.getElementById("preview-card");
+                        if (!previewCard) {
+                          previewCard = document.createElement("div");
+                          previewCard.id = "preview-card";
+                          previewCard.className = "preview-card";
+                          stepperContainer.insertAdjacentElement("beforebegin", previewCard);
+                        }
+                        previewCard.style.display = "flex";
+                        previewCard.innerHTML = `
+                          <div class="preview-card-header">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
+                            </svg>
+                            <span>Episode Ready to Listen!</span>
+                          </div>
+                          <div class="library-ep-title" style="font-weight: 600">${data.episode.title}</div>
+                          <audio controls autoplay>
+                            <source src="/audio/${data.episode.filename}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                          </audio>
+                        `;
+                      }
+
                       if (!successPanel) {
                         successPanel = document.createElement("section");
                         successPanel.className = "panel success";
@@ -614,6 +848,17 @@ PAGE_TEMPLATE = """
             submitButton.textContent = "Generate Podcast Episode";
           }
         });
+      }
+
+      function toggleLibrary() {
+        const lib = document.getElementById("library-section");
+        if (lib) {
+          lib.classList.toggle("collapsed");
+          const icon = lib.querySelector(".library-toggle-icon");
+          if (icon) {
+            icon.textContent = lib.classList.contains("collapsed") ? "►" : "▼";
+          }
+        }
       }
     </script>
     {% endraw %}
@@ -766,7 +1011,7 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                         def progress_callback(step: str):
                             q.put({"status": step})
 
-                        pipeline(
+                        plan = pipeline(
                             paths=project_paths,
                             use_cached_html=not refresh_requested,
                             audio_generator=build_default_audio_generator(
@@ -776,12 +1021,26 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
 
                         q.put({"status": "pushing"})
                         _rebuild_rss_and_push(project_paths)
-                        q.put({"status": "success", "message": "Your episode is ready. The podcast RSS feed was updated and pushed successfully."})
+                        q.put({
+                            "status": "success",
+                            "message": "The podcast RSS feed was updated and pushed successfully.",
+                            "episode": {
+                                "title": plan.translation.title_en,
+                                "filename": plan.audio_path.name,
+                            }
+                        })
 
-                    except DuplicateArticleError:
+                    except DuplicateArticleError as dup_exc:
                         q.put({"status": "pushing"})
                         _rebuild_rss_and_push(project_paths)
-                        q.put({"status": "success", "message": "Duplicate article. The podcast RSS feed was updated and pushed successfully."})
+                        q.put({
+                            "status": "success",
+                            "message": "This article was already converted to an episode.",
+                            "episode": {
+                                "title": dup_exc.article.title_bg,
+                                "filename": dup_exc.audio_path.name,
+                            }
+                        })
                     except Exception as exc:
                         if not isinstance(exc, (LangblyTimeoutError, ValueError)):
                             app.logger.exception("Unexpected recruiter showcase failure")
@@ -875,7 +1134,57 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
             error=error,
         )
 
+    @app.route("/audio/<filename>")
+    @requires_auth
+    def serve_audio(filename: str) -> ResponseReturnValue:
+        from flask import send_from_directory
+        from werkzeug.utils import secure_filename
+        safe_filename = secure_filename(filename)
+        return send_from_directory(project_paths.rss_episodes, safe_filename)
+
     return app
+
+
+def _load_episodes_library(project_paths: ProjectPaths) -> list[dict[str, str]]:
+    xml_path = project_paths.rss / "podcast.xml"
+    episodes: list[dict[str, str]] = []
+    if not xml_path.exists():
+        return episodes
+
+    try:
+        import xml.etree.ElementTree as ET
+        tree = ET.parse(xml_path)
+        root = tree.getroot()
+        channel = root.find("channel")
+        if channel is not None:
+            items = channel.findall("item")
+            for item in reversed(items):
+                title = item.find("title")
+                guid = item.find("guid")
+                pub_date = item.find("pubDate")
+                
+                guid_text = guid.text if guid is not None else ""
+                filename = guid_text.split("/")[-1] if guid_text else ""
+                
+                pub_date_text = pub_date.text if pub_date is not None else ""
+                clean_date = pub_date_text
+                if pub_date_text:
+                    try:
+                        parts = pub_date_text.split()
+                        if len(parts) >= 4:
+                            clean_date = " ".join(parts[1:4])  # e.g., "06 Jul 2026"
+                    except Exception:
+                        pass
+                
+                episodes.append({
+                    "title": title.text if title is not None else "Unknown Title",
+                    "filename": filename,
+                    "pub_date": clean_date,
+                })
+    except Exception as e:
+        print(f"Warning: Failed to parse podcast.xml: {e}")
+        
+    return episodes
 
 
 def _render_page(
@@ -886,6 +1195,7 @@ def _render_page(
     error: str | None = None,
     status_code: int = 200,
 ) -> tuple[str, int]:
+    episodes = _load_episodes_library(project_paths)
     return (
         render_template_string(
             PAGE_TEMPLATE,
@@ -893,6 +1203,7 @@ def _render_page(
             result=result,
             error=error,
             categories=WEB_CATEGORIES,
+            episodes=episodes,
         ),
         status_code,
     )
