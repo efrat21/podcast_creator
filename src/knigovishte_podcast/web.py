@@ -554,10 +554,10 @@ PAGE_TEMPLATE = """
             <svg style="width:1.1rem;height:1.1rem" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.59 14.4c-.18.27-.53.35-.8.18-2.22-1.35-5.02-1.66-8.3-.91-.3.07-.6-.12-.67-.42-.07-.3.12-.6.42-.67 3.61-.83 6.71-.48 9.21 1.05.27.18.35.53.16.77zm1.22-2.72c-.22.36-.69.48-1.05.25-2.54-1.56-6.42-2.01-9.42-1.1-.4.12-.83-.1-.95-.5-.12-.4.1-.83.5-.95 3.43-1.04 7.72-.53 10.62 1.25.36.22.48.69.3 1.05zm.11-2.81c-3.05-1.81-8.08-1.98-10.99-1.1-.47.14-.97-.12-1.11-.6-.14-.47.12-.97.6-1.11 3.35-1.02 8.9-.82 12.42 1.27.42.25.56.8.31 1.22-.25.42-.8.56-1.23.32z"/></svg>
             Spotify Show
           </a>
-          <a href="https://efrat21.github.io/podcast_creator/data/rss/podcast.xml" target="_blank" class="nav-link rss-btn">
+          <button type="button" onclick="copyRssLink(this)" class="nav-link rss-btn">
             <svg style="width:1.1rem;height:1.1rem" viewBox="0 0 24 24" fill="currentColor"><path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM3 3c9.94 0 18 8.06 18 18h-3c0-8.28-6.72-15-15-15V3zm0 6c6.63 0 12 5.37 12 12h-3c0-4.97-4.03-9-9-9V9z"/></svg>
-            RSS Feed XML
-          </a>
+            <span class="btn-text">RSS Feed XML</span>
+          </button>
         </div>
       </header>
 
@@ -859,6 +859,20 @@ PAGE_TEMPLATE = """
             icon.textContent = lib.classList.contains("collapsed") ? "►" : "▼";
           }
         }
+      }
+
+      function copyRssLink(btn) {
+        const link = "https://efrat21.github.io/podcast_creator/data/rss/podcast.xml";
+        navigator.clipboard.writeText(link).then(() => {
+          const btnText = btn.querySelector(".btn-text");
+          const originalText = btnText.textContent;
+          btnText.textContent = "Copied!";
+          setTimeout(() => {
+            btnText.textContent = originalText;
+          }, 2000);
+        }).catch(err => {
+          console.error("Failed to copy: ", err);
+        });
       }
     </script>
     {% endraw %}
