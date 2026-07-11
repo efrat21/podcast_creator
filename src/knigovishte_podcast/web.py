@@ -304,6 +304,70 @@ PAGE_TEMPLATE = """
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
       }
+
+      .stepper {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1.5rem;
+        border: 1px solid var(--card-border);
+        border-radius: 1rem;
+        background: var(--card-bg);
+        margin-top: 1.5rem;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      .step-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: var(--text-secondary);
+        font-size: 0.95rem;
+        transition: color 0.3s ease;
+      }
+
+      .step-item.active {
+        color: var(--accent-primary);
+        font-weight: 500;
+      }
+
+      .step-item.completed {
+        color: var(--success-text);
+      }
+
+      .step-item.error {
+        color: var(--error-text);
+      }
+
+      .step-icon {
+        width: 1.25rem;
+        height: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        border: 2px solid var(--input-border);
+        font-size: 0.75rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+      }
+
+      .step-item.active .step-icon {
+        border-color: var(--accent-primary);
+        animation: pulse 1.5s infinite ease-in-out;
+      }
+
+      .step-item.completed .step-icon {
+        border-color: var(--success-border);
+        background: var(--success-bg);
+        color: var(--success-text);
+      }
+
+      .step-item.error .step-icon {
+        border-color: var(--error-border);
+        background: var(--error-bg);
+        color: var(--error-text);
+      }
     </style>
   </head>
   <body>
@@ -384,19 +448,175 @@ PAGE_TEMPLATE = """
       {% endif %}
     </div>
 
+    {% raw %}
     <script>
       const form = document.getElementById("podcast-form");
-      const workingMessage = document.getElementById("working-message");
       const submitButton = document.getElementById("submit-button");
+      let successPanel = document.querySelector(".panel.success");
+      let errorPanel = document.querySelector(".panel.error");
+      let stepperContainer = document.getElementById("stepper-container");
 
-      if (form && workingMessage && submitButton) {
-        form.addEventListener("submit", () => {
-          workingMessage.hidden = false;
+      if (form && submitButton) {
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          if (successPanel) successPanel.style.display = "none";
+          if (errorPanel) errorPanel.style.display = "none";
+          
           submitButton.disabled = true;
           submitButton.textContent = "Working...";
+
+          if (!stepperContainer) {
+            stepperContainer = document.createElement("div");
+            stepperContainer.id = "stepper-container";
+            stepperContainer.className = "stepper";
+            form.insertAdjacentElement("afterend", stepperContainer);
+          }
+          
+          const steps = [
+            { id: "fetching", label: "Fetching Bulgarian article" },
+            { id: "translating", label: "Translating sentences to English" },
+            { id: "synthesizing", label: "Synthesizing Google TTS voice audio" },
+            { id: "pushing", label: "Rebuilding RSS feed & pushing to GitHub" }
+          ];
+
+          stepperContainer.innerHTML = steps.map((step, idx) => `
+            <div id="step-${step.id}" class="step-item">
+              <div class="step-icon">${idx + 1}</div>
+              <span>${step.label}</span>
+            </div>
+          `).join("");
+
+          const updateStep = (stepId, status) => {
+            const el = document.getElementById(`step-${stepId}`);
+            if (!el) return;
+            el.className = `step-item ${status}`;
+            const icon = el.querySelector(".step-icon");
+            if (status === "active") {
+              icon.innerHTML = '<div class="spinner" style="width:0.75rem;height:0.75rem;border-width:1px;"></div>';
+            } else if (status === "completed") {
+              icon.innerHTML = "✓";
+              icon.style.color = "var(--success-text)";
+            } else if (status === "error") {
+              icon.innerHTML = "✗";
+              icon.style.color = "var(--error-text)";
+              icon.style.borderColor = "var(--error-border)";
+              icon.style.background = "var(--error-bg)";
+            }
+          };
+
+          try {
+            const formData = new FormData(form);
+            const response = await fetch("/", {
+              method: "POST",
+              body: formData,
+              headers: {
+                "Accept": "text/event-stream"
+              }
+            });
+
+            if (!response.ok) {
+              throw new Error(`Server returned HTTP ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let currentActiveStep = null;
+
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop();
+
+              for (const line of lines) {
+                if (line.startsWith("data: ")) {
+                  try {
+                    const data = JSON.parse(line.slice(6));
+                    if (data.status === "ping") continue;
+                    
+                    if (data.status === "fetching" || data.status === "translating" || data.status === "synthesizing" || data.status === "pushing") {
+                      if (currentActiveStep) {
+                        updateStep(currentActiveStep, "completed");
+                      }
+                      currentActiveStep = data.status;
+                      updateStep(data.status, "active");
+                    } else if (data.status === "success") {
+                      if (currentActiveStep) {
+                        updateStep(currentActiveStep, "completed");
+                      }
+                      
+                      if (!successPanel) {
+                        successPanel = document.createElement("section");
+                        successPanel.className = "panel success";
+                        successPanel.innerHTML = `
+                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
+                          </svg>
+                          <p><strong>Your episode is ready.</strong> ${data.message}</p>
+                        `;
+                        stepperContainer.insertAdjacentElement("afterend", successPanel);
+                      } else {
+                        successPanel.style.display = "flex";
+                        successPanel.querySelector("p").innerHTML = `<strong>Your episode is ready.</strong> ${data.message}`;
+                      }
+                      submitButton.disabled = false;
+                      submitButton.textContent = "Generate Podcast Episode";
+                    } else if (data.status === "error") {
+                      if (currentActiveStep) {
+                        updateStep(currentActiveStep, "error");
+                      }
+                      
+                      if (!errorPanel) {
+                        errorPanel = document.createElement("section");
+                        errorPanel.className = "panel error";
+                        errorPanel.innerHTML = `
+                          <h2>Pipeline failed</h2>
+                          <p>${data.message}</p>
+                        `;
+                        stepperContainer.insertAdjacentElement("afterend", errorPanel);
+                      } else {
+                        errorPanel.style.display = "flex";
+                        errorPanel.querySelector("p").textContent = data.message;
+                      }
+                      submitButton.disabled = false;
+                      submitButton.textContent = "Generate Podcast Episode";
+                    }
+                  } catch (err) {
+                    console.error("Failed to parse event line:", line, err);
+                  }
+                }
+              }
+            }
+          } catch (err) {
+            console.error("Streaming request failed:", err);
+            if (currentActiveStep) {
+              updateStep(currentActiveStep, "error");
+            }
+            if (!errorPanel) {
+              errorPanel = document.createElement("section");
+              errorPanel.className = "panel error";
+              errorPanel.innerHTML = `
+                <h2>Pipeline failed</h2>
+                <p>Connection lost or error reading response: ${err.message}</p>
+              `;
+              if (stepperContainer) {
+                stepperContainer.insertAdjacentElement("afterend", errorPanel);
+              }
+            } else {
+              errorPanel.style.display = "flex";
+              errorPanel.querySelector("p").textContent = `Connection lost or error reading response: ${err.message}`;
+            }
+            submitButton.disabled = false;
+            submitButton.textContent = "Generate Podcast Episode";
+          }
         });
       }
     </script>
+    {% endraw %}
   </body>
 </html>
 """.strip()
@@ -494,6 +714,93 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
         error: str | None = None
 
         if request.method == "POST":
+            # Check if the client requested a Server-Sent Events stream
+            is_sse = "text/event-stream" in request.headers.get("Accept", "")
+
+            if is_sse:
+                import queue
+                import threading
+                import json
+
+                q = queue.Queue()
+
+                def run_in_thread():
+                    try:
+                        nonlocal url_value, min_length_value, max_length_value, category_value, bg_speed_value
+                        cleaned_url = _clean_form_value(
+                            url_value,
+                            field_name="Article URL",
+                            max_length=MAX_URL_LENGTH,
+                        )
+                        cleaned_min = _clean_form_value(
+                            min_length_value,
+                            field_name="Minimum length",
+                            max_length=MAX_FILTER_VALUE_LENGTH,
+                        )
+                        cleaned_max = _clean_form_value(
+                            max_length_value,
+                            field_name="Maximum length",
+                            max_length=MAX_FILTER_VALUE_LENGTH,
+                        )
+                        cleaned_cat = _clean_form_value(
+                            category_value,
+                            field_name="Category",
+                            max_length=MAX_FILTER_VALUE_LENGTH,
+                        )
+                        article_url = _resolve_article_url(
+                            cleaned_url,
+                            min_length=cleaned_min,
+                            max_length=cleaned_max,
+                            category=cleaned_cat,
+                        )
+                        cleaned_speed = _clean_form_value(
+                            bg_speed_value,
+                            field_name="Bulgarian voice speed",
+                            max_length=MAX_FILTER_VALUE_LENGTH,
+                        )
+                        try:
+                            bg_speed_float = float(cleaned_speed)
+                        except ValueError:
+                            bg_speed_float = 0.8
+
+                        def progress_callback(step: str):
+                            q.put({"status": step})
+
+                        pipeline(
+                            paths=project_paths,
+                            use_cached_html=not refresh_requested,
+                            audio_generator=build_default_audio_generator(
+                                bg_speaking_rate=bg_speed_float
+                            ),
+                        ).run(article_url, progress_callback=progress_callback)
+
+                        q.put({"status": "pushing"})
+                        _rebuild_rss_and_push(project_paths)
+                        q.put({"status": "success", "message": "Your episode is ready. The podcast RSS feed was updated and pushed successfully."})
+
+                    except DuplicateArticleError:
+                        q.put({"status": "pushing"})
+                        _rebuild_rss_and_push(project_paths)
+                        q.put({"status": "success", "message": "Duplicate article. The podcast RSS feed was updated and pushed successfully."})
+                    except Exception as exc:
+                        if not isinstance(exc, (LangblyTimeoutError, ValueError)):
+                            app.logger.exception("Unexpected recruiter showcase failure")
+                        q.put({"status": "error", "message": _format_error(exc)})
+
+                threading.Thread(target=run_in_thread, daemon=True).start()
+
+                def generate_events():
+                    while True:
+                        try:
+                            event = q.get(timeout=180)
+                            yield f"data: {json.dumps(event)}\n\n"
+                            if event["status"] in ("success", "error"):
+                                break
+                        except queue.Empty:
+                            yield "data: {\"status\": \"ping\"}\n\n"
+
+                return Response(generate_events(), mimetype="text/event-stream")
+
             try:
                 url_value = _clean_form_value(
                     url_value,

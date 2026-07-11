@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 
 from .config import ProjectPaths, TranslationConfig, episode_slug_from_url
 from .models import PodcastPlan
@@ -21,13 +22,19 @@ class ArticleToPodcastPipeline:
     article_manifest: ArticleAudioManifest
     use_cached_html: bool = True
 
-    def run(self, url: str) -> PodcastPlan:
+    def run(self, url: str, progress_callback: Callable[[str], None] | None = None) -> PodcastPlan:
         self.paths.ensure()
+        if progress_callback:
+            progress_callback("fetching")
         article, article_html_path = self._load_article(url)
         existing_audio_path = self.article_manifest.find_existing_audio(article)
         if existing_audio_path is not None:
             raise DuplicateArticleError(article=article, audio_path=existing_audio_path)
+        if progress_callback:
+            progress_callback("translating")
         translation = self.translator.translate(article)
+        if progress_callback:
+            progress_callback("synthesizing")
         script_text = self.script_builder.build(article, translation)
         episode_slug = episode_slug_from_url(article.source_url)
         script_path = self.paths.scripts / f"{episode_slug}.txt"
