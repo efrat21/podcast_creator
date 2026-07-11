@@ -206,7 +206,7 @@ class WebUiTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         page = response.get_data(as_text=True)
-        self.assertIn("Your episode is ready.", page)
+        self.assertIn("No new episodes to create.", page)
         self.assertNotIn("Existing audio reused", page)
         self.assertNotIn(str(self.paths.data), page)
         self.assertNotIn("file:///", page)

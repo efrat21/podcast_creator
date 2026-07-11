@@ -413,6 +413,37 @@ PAGE_TEMPLATE = """
         color: #f26522;
       }
 
+      button.nav-link {
+        font-family: inherit;
+        font-size: 0.85rem;
+        font-weight: 500;
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        color: var(--text-primary);
+        box-shadow: none;
+        padding: 0.5rem 1rem;
+        width: 10.5rem;
+        height: 2.5rem;
+        line-height: normal;
+      }
+
+      button.nav-link:hover:not(:disabled) {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--card-border);
+        color: var(--text-primary);
+        transform: translateY(-1px);
+      }
+
+      button.nav-link:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      button.nav-link.rss-btn:hover:not(:disabled) {
+        border-color: #f26522;
+        color: #f26522;
+      }
+
       /* Episode Library Panel */
       .library {
         display: flex;
@@ -560,8 +591,12 @@ PAGE_TEMPLATE = """
           </a>
           <button type="button" onclick="copyRssLink(this)" class="nav-link rss-btn">
             <svg style="width:1.1rem;height:1.1rem" viewBox="0 0 24 24" fill="currentColor"><path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM3 3c9.94 0 18 8.06 18 18h-3c0-8.28-6.72-15-15-15V3zm0 6c6.63 0 12 5.37 12 12h-3c0-4.97-4.03-9-9-9V9z"/></svg>
-            <span class="btn-text">Copy RSS Link</span>
+            <span class="btn-text">copy RSS link</span>
           </button>
+        </div>
+        <div id="rss-fallback-container" style="display:none; margin-top:1rem; text-align:center; font-size:0.85rem; color:var(--text-secondary);">
+          <p style="margin-bottom:0.25rem;">Could not copy automatically. Please copy the RSS link manually:</p>
+          <input type="text" readonly value="https://efrat21.github.io/podcast_creator/data/rss/podcast.xml" style="background:var(--input-bg); border:1px solid var(--input-border); color:var(--text-primary); padding:0.4rem 0.75rem; border-radius:0.5rem; font-size:0.85rem; width:100%; max-width:24rem; text-align:center;" onclick="this.select()">
         </div>
       </header>
 
@@ -624,7 +659,13 @@ PAGE_TEMPLATE = """
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
           </svg>
-          <p><strong>Your episode is ready.</strong> The podcast RSS feed was updated and pushed successfully.</p>
+          <p>
+            {% if result.duplicate %}
+              <strong>No new episodes to create.</strong> This article was already converted to an episode.
+            {% else %}
+              <strong>Your episode is ready.</strong> {{ result.message or "The podcast RSS feed was updated and pushed successfully." }}
+            {% endif %}
+          </p>
         </section>
       {% endif %}
 
@@ -670,6 +711,7 @@ PAGE_TEMPLATE = """
       if (form && submitButton) {
         form.addEventListener("submit", async (e) => {
           e.preventDefault();
+          const startTime = Date.now();
 
           if (successPanel) successPanel.style.display = "none";
           if (errorPanel) errorPanel.style.display = "none";
@@ -679,6 +721,9 @@ PAGE_TEMPLATE = """
           
           submitButton.disabled = true;
           submitButton.textContent = "Working...";
+
+          const workingMessage = document.getElementById("working-message");
+          if (workingMessage) workingMessage.removeAttribute("hidden");
 
           if (!stepperContainer) {
             stepperContainer = document.createElement("div");
@@ -762,69 +807,85 @@ PAGE_TEMPLATE = """
                       currentActiveStep = data.status;
                       updateStep(data.status, "active");
                     } else if (data.status === "success") {
-                      if (currentActiveStep) {
-                        updateStep(currentActiveStep, "completed");
-                      }
+                      const elapsed = Date.now() - startTime;
+                      const delay = Math.max(0, 800 - elapsed);
                       
-                      if (data.episode) {
-                        let previewCard = document.getElementById("preview-card");
-                        if (!previewCard) {
-                          previewCard = document.createElement("div");
-                          previewCard.id = "preview-card";
-                          previewCard.className = "preview-card";
-                          stepperContainer.insertAdjacentElement("beforebegin", previewCard);
+                      setTimeout(() => {
+                        if (currentActiveStep) {
+                          updateStep(currentActiveStep, "completed");
                         }
-                        previewCard.style.display = "flex";
-                        previewCard.innerHTML = `
-                          <div class="preview-card-header">
+                        if (workingMessage) workingMessage.setAttribute("hidden", "");
+                        
+                        if (data.episode) {
+                          let previewCard = document.getElementById("preview-card");
+                          if (!previewCard) {
+                            previewCard = document.createElement("div");
+                            previewCard.id = "preview-card";
+                            previewCard.className = "preview-card";
+                            stepperContainer.insertAdjacentElement("beforebegin", previewCard);
+                          }
+                          previewCard.style.display = "flex";
+                          previewCard.innerHTML = `
+                            <div class="preview-card-header">
+                              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
+                              </svg>
+                              <span>Episode Ready to Listen!</span>
+                            </div>
+                            <div class="library-ep-title" style="font-weight: 600">${data.episode.title}</div>
+                            <audio controls autoplay>
+                              <source src="/audio/${data.episode.filename}" type="audio/mpeg">
+                              Your browser does not support the audio element.
+                            </audio>
+                          `;
+                        }
+
+                        const isDuplicate = data.message.includes("No new episodes");
+                        const prefix = isDuplicate ? "<strong>No new episodes to create.</strong>" : "<strong>Your episode is ready.</strong>";
+                        const displayMsg = isDuplicate ? "This article was already converted to an episode." : data.message;
+
+                        if (!successPanel) {
+                          successPanel = document.createElement("section");
+                          successPanel.className = "panel success";
+                          successPanel.innerHTML = `
                             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
                             </svg>
-                            <span>Episode Ready to Listen!</span>
-                          </div>
-                          <div class="library-ep-title" style="font-weight: 600">${data.episode.title}</div>
-                          <audio controls autoplay>
-                            <source src="/audio/${data.episode.filename}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                          </audio>
-                        `;
-                      }
-
-                      if (!successPanel) {
-                        successPanel = document.createElement("section");
-                        successPanel.className = "panel success";
-                        successPanel.innerHTML = `
-                          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM8 15L3 10L4.41 8.59L8 12.17L15.59 4.58L17 6L8 15Z" fill="currentColor"/>
-                          </svg>
-                          <p><strong>Your episode is ready.</strong> ${data.message}</p>
-                        `;
-                        stepperContainer.insertAdjacentElement("afterend", successPanel);
-                      } else {
-                        successPanel.style.display = "flex";
-                        successPanel.querySelector("p").innerHTML = `<strong>Your episode is ready.</strong> ${data.message}`;
-                      }
-                      submitButton.disabled = false;
-                      submitButton.textContent = "Generate Podcast Episode";
+                            <p>${prefix} ${displayMsg}</p>
+                          `;
+                          stepperContainer.insertAdjacentElement("afterend", successPanel);
+                        } else {
+                          successPanel.style.display = "flex";
+                          successPanel.querySelector("p").innerHTML = `${prefix} ${displayMsg}`;
+                        }
+                        submitButton.disabled = false;
+                        submitButton.textContent = "Generate Podcast Episode";
+                      }, delay);
                     } else if (data.status === "error") {
-                      if (currentActiveStep) {
-                        updateStep(currentActiveStep, "error");
-                      }
+                      const elapsed = Date.now() - startTime;
+                      const delay = Math.max(0, 800 - elapsed);
                       
-                      if (!errorPanel) {
-                        errorPanel = document.createElement("section");
-                        errorPanel.className = "panel error";
-                        errorPanel.innerHTML = `
-                          <h2>Pipeline failed</h2>
-                          <p>${data.message}</p>
-                        `;
-                        stepperContainer.insertAdjacentElement("afterend", errorPanel);
-                      } else {
-                        errorPanel.style.display = "flex";
-                        errorPanel.querySelector("p").textContent = data.message;
-                      }
-                      submitButton.disabled = false;
-                      submitButton.textContent = "Generate Podcast Episode";
+                      setTimeout(() => {
+                        if (currentActiveStep) {
+                          updateStep(currentActiveStep, "error");
+                        }
+                        if (workingMessage) workingMessage.setAttribute("hidden", "");
+                        
+                        if (!errorPanel) {
+                          errorPanel = document.createElement("section");
+                          errorPanel.className = "panel error";
+                          errorPanel.innerHTML = `
+                            <h2>Pipeline failed</h2>
+                            <p>${data.message}</p>
+                          `;
+                          stepperContainer.insertAdjacentElement("afterend", errorPanel);
+                        } else {
+                          errorPanel.style.display = "flex";
+                          errorPanel.querySelector("p").textContent = data.message;
+                        }
+                        submitButton.disabled = false;
+                        submitButton.textContent = "Generate Podcast Episode";
+                      }, delay);
                     }
                   } catch (err) {
                     console.error("Failed to parse event line:", line, err);
@@ -834,25 +895,31 @@ PAGE_TEMPLATE = """
             }
           } catch (err) {
             console.error("Streaming request failed:", err);
-            if (currentActiveStep) {
-              updateStep(currentActiveStep, "error");
-            }
-            if (!errorPanel) {
-              errorPanel = document.createElement("section");
-              errorPanel.className = "panel error";
-              errorPanel.innerHTML = `
-                <h2>Pipeline failed</h2>
-                <p>Connection lost or error reading response: ${err.message}</p>
-              `;
-              if (stepperContainer) {
-                stepperContainer.insertAdjacentElement("afterend", errorPanel);
+            const elapsed = Date.now() - startTime;
+            const delay = Math.max(0, 800 - elapsed);
+            
+            setTimeout(() => {
+              if (currentActiveStep) {
+                updateStep(currentActiveStep, "error");
               }
-            } else {
-              errorPanel.style.display = "flex";
-              errorPanel.querySelector("p").textContent = `Connection lost or error reading response: ${err.message}`;
-            }
-            submitButton.disabled = false;
-            submitButton.textContent = "Generate Podcast Episode";
+              if (workingMessage) workingMessage.setAttribute("hidden", "");
+              if (!errorPanel) {
+                errorPanel = document.createElement("section");
+                errorPanel.className = "panel error";
+                errorPanel.innerHTML = `
+                  <h2>Pipeline failed</h2>
+                  <p>Connection lost or error reading response: ${err.message}</p>
+                `;
+                if (stepperContainer) {
+                  stepperContainer.insertAdjacentElement("afterend", errorPanel);
+                }
+              } else {
+                errorPanel.style.display = "flex";
+                errorPanel.querySelector("p").textContent = `Connection lost or error reading response: ${err.message}`;
+              }
+              submitButton.disabled = false;
+              submitButton.textContent = "Generate Podcast Episode";
+            }, delay);
           }
         });
       }
@@ -870,45 +937,59 @@ PAGE_TEMPLATE = """
 
       function copyRssLink(btn) {
         const link = "https://efrat21.github.io/podcast_creator/data/rss/podcast.xml";
-        
-        const showFeedback = () => {
-          const btnText = btn.querySelector(".btn-text");
+        const btnText = btn.querySelector(".btn-text");
+        const originalText = btnText ? btnText.textContent : "copy RSS link";
+
+        function showFeedback() {
           if (btnText) {
-            const originalText = btnText.textContent;
             btnText.textContent = "Copied!";
             setTimeout(() => {
               btnText.textContent = originalText;
             }, 2000);
           }
-        };
+        }
 
-        const fallbackCopy = () => {
+        // Try modern clipboard API first if in secure context
+        if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext) {
+          navigator.clipboard.writeText(link)
+            .then(showFeedback)
+            .catch(() => {
+              runFallback();
+            });
+        } else {
+          runFallback();
+        }
+
+        function runFallback() {
           try {
             const textArea = document.createElement("textarea");
             textArea.value = link;
             textArea.style.top = "0";
             textArea.style.left = "0";
             textArea.style.position = "fixed";
+            textArea.setAttribute("readonly", "");
             document.body.appendChild(textArea);
             textArea.focus();
             textArea.select();
+            textArea.setSelectionRange(0, 99999);
             const successful = document.execCommand("copy");
             document.body.removeChild(textArea);
             if (successful) {
               showFeedback();
             } else {
-              alert("Failed to copy link. Please manually copy: " + link);
+              showManualCopyFallback();
             }
           } catch (err) {
             console.error("Fallback copy failed:", err);
-            alert("Failed to copy link. Please manually copy: " + link);
+            showManualCopyFallback();
           }
-        };
+        }
 
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(link).then(showFeedback).catch(fallbackCopy);
-        } else {
-          fallbackCopy();
+        function showManualCopyFallback() {
+          const fallback = document.getElementById("rss-fallback-container");
+          if (fallback) {
+            fallback.style.display = "block";
+          }
         }
       }
     </script>
@@ -1162,10 +1243,18 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                     ),
                 ).run(article_url)
                 _rebuild_rss_and_push(project_paths)
-                result = {"ready": True}
+                result = {
+                    "ready": True,
+                    "message": "The podcast RSS feed was updated and pushed successfully.",
+                    "duplicate": False,
+                }
             except DuplicateArticleError:
                 _rebuild_rss_and_push(project_paths)
-                result = {"ready": True}
+                result = {
+                    "ready": True,
+                    "message": "No new episodes to create. This article was already converted to an episode.",
+                    "duplicate": True,
+                }
             except Exception as exc:
                 if not isinstance(exc, (LangblyTimeoutError, ValueError)):
                     app.logger.exception("Unexpected recruiter showcase failure")
