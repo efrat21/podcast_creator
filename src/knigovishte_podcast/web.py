@@ -380,6 +380,7 @@ PAGE_TEMPLATE = """
       .nav-link {
         display: inline-flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
         padding: 0.5rem 1rem;
         border-radius: 2rem;
@@ -391,6 +392,9 @@ PAGE_TEMPLATE = """
         background: var(--card-bg);
         color: var(--text-primary);
         cursor: pointer;
+        width: 10.5rem;
+        height: 2.5rem;
+        box-sizing: border-box;
       }
 
       .nav-link:hover {
@@ -556,7 +560,7 @@ PAGE_TEMPLATE = """
           </a>
           <button type="button" onclick="copyRssLink(this)" class="nav-link rss-btn">
             <svg style="width:1.1rem;height:1.1rem" viewBox="0 0 24 24" fill="currentColor"><path d="M6.18 15.64a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM3 3c9.94 0 18 8.06 18 18h-3c0-8.28-6.72-15-15-15V3zm0 6c6.63 0 12 5.37 12 12h-3c0-4.97-4.03-9-9-9V9z"/></svg>
-            <span class="btn-text">RSS Feed XML</span>
+            <span class="btn-text">Copy RSS Link</span>
           </button>
         </div>
       </header>
@@ -715,6 +719,10 @@ PAGE_TEMPLATE = """
             }
           };
 
+          let currentActiveStep = "fetching";
+          updateStep("fetching", "active");
+          stepperContainer.style.display = "flex";
+
           try {
             const formData = new FormData(form);
             const response = await fetch("/", {
@@ -732,7 +740,6 @@ PAGE_TEMPLATE = """
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = "";
-            let currentActiveStep = null;
 
             while (true) {
               const { value, done } = await reader.read();
@@ -1045,11 +1052,9 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                         })
 
                     except DuplicateArticleError as dup_exc:
-                        q.put({"status": "pushing"})
-                        _rebuild_rss_and_push(project_paths)
                         q.put({
                             "status": "success",
-                            "message": "This article was already converted to an episode.",
+                            "message": "No new episodes to create. This article was already converted to an episode.",
                             "episode": {
                                 "title": dup_exc.article.title_bg,
                                 "filename": dup_exc.audio_path.name,
@@ -1072,7 +1077,15 @@ def create_app(paths: ProjectPaths | None = None) -> Flask:
                         except queue.Empty:
                             yield "data: {\"status\": \"ping\"}\n\n"
 
-                return Response(generate_events(), mimetype="text/event-stream")
+                return Response(
+                    generate_events(),
+                    mimetype="text/event-stream",
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "X-Accel-Buffering": "no",
+                        "Connection": "keep-alive",
+                    }
+                )
 
             try:
                 url_value = _clean_form_value(
